@@ -2,21 +2,25 @@ import { SupabaseService } from '../database/supabase.service';
 import { LocalPostgresService } from '../database/local-postgres.service';
 import { DataSyncService } from '../sync/data-sync.service';
 import { NaverShoppingProvider } from '../../providers/naver-shopping.provider';
+import { ApiKeyManager } from '../../providers/api-key-manager';
 import { logger } from '../../utils/logger';
 import { config } from '../../config';
-import { Keyword, RankingData, SearchResult, ShoppingRanking } from '../../types';
+import { Keyword, SearchResult, ShoppingRanking } from '../../types';
 
 export class RankingService {
   private supabaseService: SupabaseService;
   private localDbService: LocalPostgresService;
   private dataSyncService: DataSyncService;
   private searchProvider: NaverShoppingProvider;
+  private lastHourlyAggregation: number = -1;
+  private dailyAggregationDone: boolean = false;
 
   constructor() {
     this.supabaseService = new SupabaseService();
     this.localDbService = new LocalPostgresService();
     this.dataSyncService = new DataSyncService(this.localDbService, this.supabaseService);
-    this.searchProvider = new NaverShoppingProvider();
+    const apiKeyManager = new ApiKeyManager(config.naver.apiKeys);
+    this.searchProvider = new NaverShoppingProvider(apiKeyManager);
   }
 
   /**
@@ -130,7 +134,7 @@ export class RankingService {
         lprice: result.lprice,
         hprice: result.hprice,
         mall_name: result.mallName,
-        product_type: result.productType,
+        product_type: parseInt(result.productType) || 1,
         brand: result.brand,
         maker: result.maker,
         category1: result.category1,
@@ -192,9 +196,6 @@ export class RankingService {
       });
     }
   }
-
-  private lastHourlyAggregation: number = -1;
-  private dailyAggregationDone: boolean = false;
 
   /**
    * Get database statistics

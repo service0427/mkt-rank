@@ -61,7 +61,7 @@ export class NaverShoppingProvider extends BaseSearchProvider {
 
     while (retryCount < maxRetries) {
       try {
-        const apiKey = this.apiKeyManager.getNextKey();
+        this.apiKeyManager.getNextKey();
         const axiosInstance = this.createAxiosInstance();
         
         const display = config.search.itemsPerPage;
@@ -115,7 +115,7 @@ export class NaverShoppingProvider extends BaseSearchProvider {
   }
 
   private transformResults(items: NaverSearchItem[]): SearchResult[] {
-    return items.map((item, index) => ({
+    return items.map((item) => ({
       productId: item.productId,
       title: this.cleanHtml(item.title),
       link: item.link,

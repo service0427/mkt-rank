@@ -1,4 +1,4 @@
-import { Pool, PoolClient } from 'pg';
+import { Pool } from 'pg';
 import { logger } from '../../utils/logger';
 import { ShoppingRanking } from '../../types';
 

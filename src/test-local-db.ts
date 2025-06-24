@@ -1,4 +1,4 @@
-import { config, validateConfig } from './config';
+import { validateConfig } from './config';
 import { LocalPostgresService } from './services/database/local-postgres.service';
 import { SupabaseService } from './services/database/supabase.service';
 import { DataSyncService } from './services/sync/data-sync.service';
@@ -32,7 +32,7 @@ async function testLocalDbSetup() {
     console.log('\n========== ACTIVE KEYWORDS ==========');
     console.log(`Found ${keywords.length} active keywords`);
     if (keywords.length > 0) {
-      console.log('First 5 keywords:', keywords.slice(0, 5).map(k => k.keyword));
+      console.log('First 5 keywords:', keywords.slice(0, 5).map((k: any) => k.keyword));
     }
 
     // 5. 동기화 서비스 테스트
