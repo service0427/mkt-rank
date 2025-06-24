@@ -26,7 +26,7 @@ try {
 }
 
 // Health check
-app.get('/api/health', (req, res) => {
+app.get('/api/health', (_req, res) => {
   res.json({ 
     status: 'ok', 
     service: 'mkt-rank-api',
@@ -39,10 +39,11 @@ app.get('/api/search', async (req, res) => {
   const { keyword } = req.query;
   
   if (!keyword || typeof keyword !== 'string') {
-    return res.status(400).json({ 
+    res.status(400).json({ 
       error: 'Keyword is required',
       message: 'Please provide a keyword parameter' 
     });
+    return;
   }
 
   try {
@@ -80,9 +81,10 @@ app.get('/api/search/full', async (req, res) => {
   const { keyword, pages = '5' } = req.query;
   
   if (!keyword || typeof keyword !== 'string') {
-    return res.status(400).json({ 
+    res.status(400).json({ 
       error: 'Keyword is required' 
     });
+    return;
   }
 
   const maxPages = Math.min(parseInt(pages as string), 10);

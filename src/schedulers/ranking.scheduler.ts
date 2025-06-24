@@ -127,7 +127,7 @@ export class RankingScheduler {
     // Parse cron expression to calculate next run
     // This is a simplified calculation
     const now = new Date();
-    const [minute, hour] = config.scheduler.cronExpression.split(' ');
+    const [, hour] = config.scheduler.cronExpression.split(' ');
     
     if (hour.includes('*/')) {
       const interval = parseInt(hour.split('/')[1], 10);

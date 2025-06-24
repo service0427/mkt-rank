@@ -1,4 +1,4 @@
-import { config, validateConfig } from './config';
+import { validateConfig } from './config';
 import { SupabaseService } from './services/database/supabase.service';
 import { logger } from './utils/logger';
 
@@ -53,7 +53,7 @@ async function testDatabase() {
         console.log(`Found ${rankings.length} recent rankings:`);
         rankings.forEach((ranking) => {
           console.log(`- Rank ${ranking.rank}: ${ranking.title}`);
-          console.log(`  Price: ₩${ranking.price?.toLocaleString() || 'N/A'}`);
+          console.log(`  Price: ₩${ranking.lprice?.toLocaleString() || 'N/A'}`);
           console.log(`  Collected: ${new Date(ranking.collected_at).toLocaleString()}`);
         });
       } else {

@@ -10,7 +10,7 @@ import {
 } from '../../types';
 
 export class SupabaseService {
-  private client: SupabaseClient;
+  public client: SupabaseClient;
 
   constructor() {
     this.client = createClient(config.supabase.url, config.supabase.anonKey);
@@ -73,6 +73,7 @@ export class SupabaseService {
       const rankings: Omit<ShoppingRanking, 'id' | 'created_at'>[] = results.map(
         (result, index) => ({
           keyword_id: keyword.id,
+          keyword_name: keyword.keyword,
           product_id: result.productId,
           title: result.title,
           link: result.link,
@@ -80,7 +81,7 @@ export class SupabaseService {
           lprice: result.lprice,
           hprice: result.hprice,
           mall_name: result.mallName,
-          product_type: result.productType,
+          product_type: parseInt(result.productType) || 1,
           brand: result.brand,
           maker: result.maker,
           category1: result.category1,
@@ -250,6 +251,49 @@ export class SupabaseService {
       return deletedCount;
     } catch (error) {
       logger.error('Failed to cleanup old rankings', { error });
+      throw error;
+    }
+  }
+
+  /**
+   * Get active keywords (with search volume > 0)
+   */
+  async getActiveKeywords(limit: number = 100): Promise<SearchKeyword[]> {
+    try {
+      const { data, error } = await this.client
+        .from('search_keywords')
+        .select('*')
+        .gt('total_count', 0)
+        .order('total_count', { ascending: false })
+        .limit(limit);
+
+      if (error) {
+        throw new DatabaseError(error.message, 'getActiveKeywords');
+      }
+
+      logger.info(`Fetched ${data?.length || 0} active keywords`);
+      return data || [];
+    } catch (error) {
+      logger.error('Failed to fetch active keywords', { error });
+      throw error;
+    }
+  }
+
+  /**
+   * Update keyword last collected timestamp
+   */
+  async updateKeywordLastCollected(keywordId: string): Promise<void> {
+    try {
+      const { error } = await this.client
+        .from('search_keywords')
+        .update({ searched_at: new Date().toISOString() })
+        .eq('id', keywordId);
+
+      if (error) {
+        throw new DatabaseError(error.message, 'updateKeywordLastCollected');
+      }
+    } catch (error) {
+      logger.error('Failed to update keyword last collected', { error, keywordId });
       throw error;
     }
   }

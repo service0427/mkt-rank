@@ -1,4 +1,4 @@
-import { config, validateConfig } from './config';
+import { validateConfig } from './config';
 import { RankingService } from './services/ranking/ranking.service';
 import { logger } from './utils/logger';
 
