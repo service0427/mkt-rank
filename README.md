@@ -52,31 +52,36 @@ SCHEDULE_INTERVAL=0 */3 * * *
 rankings 테이블만 생성하면 됩니다:
 
 ```sql
--- 순위 데이터 테이블
-CREATE TABLE IF NOT EXISTS rankings (
+-- 쇼핑 순위 데이터 테이블
+CREATE TABLE IF NOT EXISTS shopping_rankings (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   keyword_id UUID REFERENCES search_keywords(id) ON DELETE CASCADE,
   product_id TEXT NOT NULL,
   title TEXT NOT NULL,
   link TEXT,
   image TEXT,
-  price INTEGER,
+  lprice INTEGER,
+  hprice INTEGER,
   mall_name TEXT,
+  product_type TEXT,
+  brand TEXT,
+  maker TEXT,
   category1 TEXT,
   category2 TEXT,
   category3 TEXT,
   category4 TEXT,
   rank INTEGER NOT NULL,
   collected_at TIMESTAMP WITH TIME ZONE NOT NULL,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW()),
-  UNIQUE(keyword_id, product_id, collected_at)
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW())
 );
 
--- 인덱스 생성
-CREATE INDEX IF NOT EXISTS idx_rankings_keyword_collected 
-  ON rankings(keyword_id, collected_at DESC);
-CREATE INDEX IF NOT EXISTS idx_rankings_product 
-  ON rankings(product_id);
+-- 성능 최적화를 위한 인덱스
+CREATE INDEX IF NOT EXISTS idx_shopping_rankings_keyword_collected 
+  ON shopping_rankings(keyword_id, collected_at DESC);
+CREATE INDEX IF NOT EXISTS idx_shopping_rankings_product 
+  ON shopping_rankings(product_id);
+CREATE INDEX IF NOT EXISTS idx_shopping_rankings_collected_at 
+  ON shopping_rankings(collected_at DESC);
 
 -- API 사용량 추적 테이블 (선택사항)
 CREATE TABLE IF NOT EXISTS api_usage (

@@ -11,23 +11,31 @@ export interface SearchKeyword {
   searched_at: string;
 }
 
-export interface Ranking {
-  id: string;
+export interface ShoppingRanking {
+  id?: string;
   keyword_id: string;
+  keyword_name: string;
   product_id: string;
   title: string;
   link: string;
   image: string;
-  price: number;
+  lprice: number;
+  hprice?: number;
   mall_name: string;
+  product_type: number;
+  brand?: string;
+  maker?: string;
   category1: string;
   category2: string;
   category3: string;
   category4: string;
   rank: number;
-  collected_at: string;
-  created_at: string;
+  collected_at: Date | string;
+  created_at?: Date | string;
 }
+
+// Alias for compatibility
+export type Keyword = SearchKeyword;
 
 export interface ApiUsage {
   id: string;
@@ -47,8 +55,12 @@ export interface SearchResult {
   title: string;
   link: string;
   image: string;
-  price: number;
+  lprice: number;
+  hprice?: number;
   mallName: string;
+  productType: string;
+  brand?: string;
+  maker?: string;
   category1: string;
   category2: string;
   category3: string;

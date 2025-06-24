@@ -1,21 +1,15 @@
 import { SupabaseService } from '../database/supabase.service';
-import { LocalPostgresService } from '../database/local-postgres.service';
-import { DataSyncService } from '../sync/data-sync.service';
 import { NaverShoppingProvider } from '../../providers/naver-shopping.provider';
 import { logger } from '../../utils/logger';
 import { config } from '../../config';
-import { Keyword, RankingData, SearchResult, ShoppingRanking } from '../../types';
+import { Keyword, RankingData, SearchResult } from '../../types';
 
 export class RankingService {
   private supabaseService: SupabaseService;
-  private localDbService: LocalPostgresService;
-  private dataSyncService: DataSyncService;
   private searchProvider: NaverShoppingProvider;
 
   constructor() {
     this.supabaseService = new SupabaseService();
-    this.localDbService = new LocalPostgresService();
-    this.dataSyncService = new DataSyncService(this.localDbService, this.supabaseService);
     this.searchProvider = new NaverShoppingProvider();
   }
 
@@ -65,23 +59,8 @@ export class RankingService {
         errorCount,
       });
 
-      // Run aggregations and sync to Supabase
-      const keywordIds = keywords.map(k => k.id);
-      
-      // Run hourly aggregation every hour
-      const currentHour = new Date().getHours();
-      if (currentHour !== this.lastHourlyAggregation) {
-        await this.dataSyncService.syncHourlyAggregates(keywordIds);
-        this.lastHourlyAggregation = currentHour;
-      }
-      
-      // Run daily aggregation at midnight
-      if (currentHour === 0 && !this.dailyAggregationDone) {
-        await this.dataSyncService.syncDailyAggregates(keywordIds);
-        this.dailyAggregationDone = true;
-      } else if (currentHour !== 0) {
-        this.dailyAggregationDone = false;
-      }
+      // Clean up old rankings
+      await this.cleanupOldData();
     } catch (error) {
       logger.error('Ranking collection process failed', { error });
       throw error;
@@ -118,35 +97,14 @@ export class RankingService {
         await this.sleep(500);
       }
 
-      // Prepare rankings for local database
-      const rankings: ShoppingRanking[] = allResults.map((result, index) => ({
-        keyword_id: keyword.id,
-        keyword_name: keyword.keyword,
-        product_id: result.productId,
-        rank: index + 1,
-        title: result.title,
-        link: result.link,
-        image: result.image,
-        lprice: result.lprice,
-        hprice: result.hprice,
-        mall_name: result.mallName,
-        product_type: result.productType,
-        brand: result.brand,
-        maker: result.maker,
-        category1: result.category1,
-        category2: result.category2,
-        category3: result.category3,
-        category4: result.category4,
-        collected_at: collectedAt,
-      }));
+      // Save rankings to database
+      const rankingData: RankingData = {
+        keyword,
+        results: allResults,
+        collectedAt,
+      };
 
-      // Save to local PostgreSQL first
-      await this.localDbService.saveRankings(rankings);
-      
-      // Sync latest rankings to Supabase for dashboard
-      await this.dataSyncService.syncLatestRankings([keyword.id]);
-      
-      // Update last collected timestamp in Supabase
+      await this.supabaseService.insertRankings(rankingData);
       await this.supabaseService.updateKeywordLastCollected(keyword.id);
 
       logger.info(`Successfully collected ${allResults.length} rankings for keyword: ${keyword.keyword}`);
@@ -193,18 +151,17 @@ export class RankingService {
     }
   }
 
-  private lastHourlyAggregation: number = -1;
-  private dailyAggregationDone: boolean = false;
-
   /**
-   * Get database statistics
+   * Clean up old data
    */
-  async getStatistics(): Promise<any> {
-    const localStats = await this.localDbService.getStatistics();
-    return {
-      local: localStats,
-      lastSync: new Date().toISOString()
-    };
+  private async cleanupOldData(): Promise<void> {
+    try {
+      const deletedCount = await this.supabaseService.cleanupOldRankings(30);
+      logger.info(`Cleaned up ${deletedCount} old ranking records`);
+    } catch (error) {
+      logger.error('Failed to cleanup old data', { error });
+      // Don't throw - cleanup failure shouldn't stop the main process
+    }
   }
 
   /**

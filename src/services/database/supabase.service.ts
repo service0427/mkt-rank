@@ -3,7 +3,7 @@ import { config } from '../../config';
 import { logger } from '../../utils/logger';
 import {
   SearchKeyword,
-  Ranking,
+  ShoppingRanking,
   ApiUsage,
   DatabaseError,
   RankingData,
@@ -70,15 +70,19 @@ export class SupabaseService {
       const { keyword, results, collectedAt } = rankingData;
 
       // Prepare ranking records
-      const rankings: Omit<Ranking, 'id' | 'created_at'>[] = results.map(
+      const rankings: Omit<ShoppingRanking, 'id' | 'created_at'>[] = results.map(
         (result, index) => ({
           keyword_id: keyword.id,
           product_id: result.productId,
           title: result.title,
           link: result.link,
           image: result.image,
-          price: result.price,
+          lprice: result.lprice,
+          hprice: result.hprice,
           mall_name: result.mallName,
+          product_type: result.productType,
+          brand: result.brand,
+          maker: result.maker,
           category1: result.category1,
           category2: result.category2,
           category3: result.category3,
@@ -92,7 +96,7 @@ export class SupabaseService {
       const batchSize = 100;
       for (let i = 0; i < rankings.length; i += batchSize) {
         const batch = rankings.slice(i, i + batchSize);
-        const { error } = await this.client.from('rankings').insert(batch);
+        const { error } = await this.client.from('shopping_rankings').insert(batch);
 
         if (error) {
           throw new DatabaseError(
@@ -135,10 +139,10 @@ export class SupabaseService {
   async getRecentRankings(
     keywordId: string,
     limit: number = 100
-  ): Promise<Ranking[]> {
+  ): Promise<ShoppingRanking[]> {
     try {
       const { data, error } = await this.client
-        .from('rankings')
+        .from('shopping_rankings')
         .select('*')
         .eq('keyword_id', keywordId)
         .order('collected_at', { ascending: false })
@@ -162,7 +166,7 @@ export class SupabaseService {
   async checkRankingsTable(): Promise<boolean> {
     try {
       const { error } = await this.client
-        .from('rankings')
+        .from('shopping_rankings')
         .select('id')
         .limit(1);
 

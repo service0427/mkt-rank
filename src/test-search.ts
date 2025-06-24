@@ -34,9 +34,11 @@ async function testSearch() {
     
     results.results.slice(0, 10).forEach((product, index) => {
       console.log(`\n${index + 1}. ${product.title}`);
-      console.log(`   Price: ₩${product.price.toLocaleString()}`);
-      console.log(`   Mall: ${product.mallName}`);
+      console.log(`   Price: ₩${product.lprice.toLocaleString()}`);
+      console.log(`   Mall: ${product.mallName} (Type: ${product.productType})`);
+      console.log(`   Brand: ${product.brand || 'N/A'} / Maker: ${product.maker || 'N/A'}`);
       console.log(`   Category: ${product.category1} > ${product.category2}`);
+      console.log(`   Product ID: ${product.productId}`);
       console.log(`   Link: ${product.link}`);
     });
 
