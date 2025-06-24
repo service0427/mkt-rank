@@ -1,6 +1,6 @@
 import { SupabaseService } from '../database/supabase.service';
 import { LocalPostgresService } from '../database/local-postgres.service';
-import { DataSyncService } from '../sync/data-sync.service';
+import { SimplifiedDataSyncService } from '../sync/data-sync-simplified.service';
 import { NaverShoppingProvider } from '../../providers/naver-shopping.provider';
 import { ApiKeyManager } from '../../providers/api-key-manager';
 import { logger } from '../../utils/logger';
@@ -10,7 +10,7 @@ import { Keyword, SearchResult, ShoppingRanking } from '../../types';
 export class RankingService {
   private supabaseService: SupabaseService;
   private localDbService: LocalPostgresService;
-  private dataSyncService: DataSyncService;
+  private dataSyncService: SimplifiedDataSyncService;
   private searchProvider: NaverShoppingProvider;
   private lastHourlyAggregation: number = -1;
   private dailyAggregationDone: boolean = false;
@@ -18,7 +18,7 @@ export class RankingService {
   constructor() {
     this.supabaseService = new SupabaseService();
     this.localDbService = new LocalPostgresService();
-    this.dataSyncService = new DataSyncService(this.localDbService, this.supabaseService);
+    this.dataSyncService = new SimplifiedDataSyncService(this.localDbService, this.supabaseService);
     const apiKeyManager = new ApiKeyManager(config.naver.apiKeys);
     this.searchProvider = new NaverShoppingProvider(apiKeyManager);
   }
@@ -69,22 +69,21 @@ export class RankingService {
         errorCount,
       });
 
-      // Run aggregations and sync to Supabase
+      // Run sync to Supabase
       const keywordIds = keywords.map(k => k.id);
       
-      // Run hourly aggregation every hour
-      const currentHour = new Date().getHours();
-      if (currentHour !== this.lastHourlyAggregation) {
-        await this.dataSyncService.syncHourlyAggregates(keywordIds);
-        this.lastHourlyAggregation = currentHour;
+      // Sync current rankings to Supabase
+      await this.dataSyncService.syncCurrentRankings(keywordIds);
+      
+      // Sync hourly snapshots every hour
+      const now = new Date();
+      if (now.getMinutes() === 0) {
+        await this.dataSyncService.syncHourlySnapshots(keywordIds);
       }
       
-      // Run daily aggregation at midnight
-      if (currentHour === 0 && !this.dailyAggregationDone) {
-        await this.dataSyncService.syncDailyAggregates(keywordIds);
-        this.dailyAggregationDone = true;
-      } else if (currentHour !== 0) {
-        this.dailyAggregationDone = false;
+      // Sync daily snapshots at midnight
+      if (now.getHours() === 0 && now.getMinutes() === 0) {
+        await this.dataSyncService.syncDailySnapshots(keywordIds);
       }
     } catch (error) {
       logger.error('Ranking collection process failed', { error });
