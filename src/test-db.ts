@@ -16,38 +16,16 @@ async function testDatabase() {
     const tableExists = await supabaseService.checkRankingsTable();
     
     if (!tableExists) {
-      console.log('Rankings table does not exist. Creating...');
+      console.log('Shopping rankings tables do not exist. Creating...');
       
-      // Note: This might fail if you don't have permissions
-      // In that case, create the table manually in Supabase dashboard
-      console.log('\nPlease create the rankings table in Supabase with this SQL:');
-      console.log(`
-CREATE TABLE IF NOT EXISTS rankings (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  keyword_id UUID REFERENCES search_keywords(id) ON DELETE CASCADE,
-  product_id TEXT NOT NULL,
-  title TEXT NOT NULL,
-  link TEXT,
-  image TEXT,
-  price INTEGER,
-  mall_name TEXT,
-  category1 TEXT,
-  category2 TEXT,
-  category3 TEXT,
-  category4 TEXT,
-  rank INTEGER NOT NULL,
-  collected_at TIMESTAMP WITH TIME ZONE NOT NULL,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW()),
-  UNIQUE(keyword_id, product_id, collected_at)
-);
-
-CREATE INDEX IF NOT EXISTS idx_rankings_keyword_collected 
-  ON rankings(keyword_id, collected_at DESC);
-CREATE INDEX IF NOT EXISTS idx_rankings_product 
-  ON rankings(product_id);
-      `);
+      console.log('\nPlease run the SQL file in Supabase:');
+      console.log('src/database-schema-supabase-simplified.sql');
+      console.log('\nThis will create:');
+      console.log('- shopping_rankings_current (현재 순위)');
+      console.log('- shopping_rankings_hourly (시간별 스냅샷)');
+      console.log('- shopping_rankings_daily (일별 스냅샷)');
     } else {
-      console.log('✓ Rankings table exists');
+      console.log('✓ Shopping rankings tables exist');
     }
 
     // Test 2: Fetch keywords
