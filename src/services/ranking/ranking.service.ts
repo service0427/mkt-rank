@@ -12,8 +12,6 @@ export class RankingService {
   private localDbService: LocalPostgresService;
   private dataSyncService: SimplifiedDataSyncService;
   private searchProvider: NaverShoppingProvider;
-  private lastHourlyAggregation: number = -1;
-  private dailyAggregationDone: boolean = false;
 
   constructor() {
     this.supabaseService = new SupabaseService();
@@ -147,7 +145,7 @@ export class RankingService {
       await this.localDbService.saveRankings(rankings);
       
       // Sync latest rankings to Supabase for dashboard
-      await this.dataSyncService.syncLatestRankings([keyword.id]);
+      await this.dataSyncService.syncCurrentRankings([keyword.id]);
       
       // Update last collected timestamp in Supabase
       await this.supabaseService.updateKeywordLastCollected(keyword.id);
