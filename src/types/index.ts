@@ -1,10 +1,14 @@
 // Database types
-export interface Keyword {
+export interface SearchKeyword {
   id: string;
+  user_id: string | null;
   keyword: string;
-  active: boolean;
-  created_at: string;
-  updated_at: string;
+  pc_count: number;
+  mobile_count: number;
+  total_count: number;
+  pc_ratio: number;
+  mobile_ratio: number;
+  searched_at: string;
 }
 
 export interface Ranking {
@@ -62,9 +66,17 @@ export interface SearchProvider {
 
 // Service types
 export interface RankingData {
-  keyword: Keyword;
+  keyword: SearchKeyword;
   results: SearchResult[];
   collectedAt: Date;
+}
+
+// API Key Management
+export interface NaverApiKey {
+  clientId: string;
+  clientSecret: string;
+  usageCount?: number;
+  lastUsed?: Date;
 }
 
 // Scheduler types

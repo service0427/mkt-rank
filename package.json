@@ -8,6 +8,8 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "test": "jest",
+    "test:search": "tsx src/test-search.ts",
+    "test:db": "tsx src/test-db.ts",
     "lint": "eslint src --ext .ts",
     "typecheck": "tsc --noEmit"
   },

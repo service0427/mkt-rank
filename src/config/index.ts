@@ -1,7 +1,28 @@
 import dotenv from 'dotenv';
+import { NaverApiKey } from '../types';
 
-// Load environment variables
 dotenv.config();
+
+// Parse Naver API keys from environment variable
+const parseNaverApiKeys = (): NaverApiKey[] => {
+  const apiKeysStr = process.env.NAVER_API_KEYS || '';
+  if (!apiKeysStr) {
+    throw new Error('NAVER_API_KEYS environment variable is required');
+  }
+
+  return apiKeysStr.split(',').map((keyPair) => {
+    const [clientId, clientSecret] = keyPair.trim().split(':');
+    if (!clientId || !clientSecret) {
+      throw new Error('Invalid API key format. Expected: clientId:clientSecret');
+    }
+    return {
+      clientId,
+      clientSecret,
+      usageCount: 0,
+      lastUsed: new Date(),
+    };
+  });
+};
 
 export const config = {
   supabase: {
@@ -9,40 +30,40 @@ export const config = {
     anonKey: process.env.SUPABASE_ANON_KEY || '',
   },
   naver: {
-    clientId: process.env.NAVER_CLIENT_ID || '',
-    clientSecret: process.env.NAVER_CLIENT_SECRET || '',
+    apiKeys: parseNaverApiKeys(),
     apiUrl: 'https://openapi.naver.com/v1/search/shop.json',
   },
   scheduler: {
-    // Run every 3 hours
-    cronExpression: process.env.CRON_EXPRESSION || '0 */3 * * *',
+    cronExpression: process.env.SCHEDULE_INTERVAL || '0 */3 * * *',
   },
   search: {
-    itemsPerPage: 100, // Naver API max items per request
-    maxPages: 10, // Maximum pages to fetch per keyword
+    itemsPerPage: 100,
+    maxPages: 10,
+    delayBetweenRequests: 1000, // 1 second delay between requests
   },
-  environment: process.env.NODE_ENV || 'development',
+  app: {
+    nodeEnv: process.env.NODE_ENV || 'development',
+    logLevel: process.env.LOG_LEVEL || 'info',
+  },
 };
 
-// Validate required configuration
-const validateConfig = () => {
-  const requiredEnvVars = [
+export function validateConfig(): void {
+  const required = [
     'SUPABASE_URL',
     'SUPABASE_ANON_KEY',
-    'NAVER_CLIENT_ID',
-    'NAVER_CLIENT_SECRET',
+    'NAVER_API_KEYS',
   ];
 
-  const missingVars = requiredEnvVars.filter(
-    (varName) => !process.env[varName]
-  );
+  const missing = required.filter((key) => !process.env[key]);
 
-  if (missingVars.length > 0) {
-    throw new Error(
-      `Missing required environment variables: ${missingVars.join(', ')}`
-    );
+  if (missing.length > 0) {
+    throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
   }
-};
 
-// Validate on module load
-validateConfig();
+  // Validate API keys format
+  try {
+    parseNaverApiKeys();
+  } catch (error) {
+    throw new Error(`Invalid NAVER_API_KEYS format: ${error}`);
+  }
+}

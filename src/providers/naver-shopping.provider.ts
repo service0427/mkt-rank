@@ -1,7 +1,9 @@
-import axios, { AxiosInstance } from 'axios';
+import axios, { AxiosInstance, AxiosError } from 'axios';
 import { BaseSearchProvider } from './base.provider';
-import { SearchResponse, SearchResult } from '../types';
+import { SearchResponse, SearchResult, ApiError } from '../types';
 import { config } from '../config';
+import { ApiKeyManager } from './api-key-manager';
+import { logger } from '../utils/logger';
 
 interface NaverSearchItem {
   title: string;
@@ -31,17 +33,22 @@ interface NaverSearchResponse {
 export class NaverShoppingProvider extends BaseSearchProvider {
   protected providerName = 'NaverShopping';
   protected apiUrl = config.naver.apiUrl;
-  private axiosInstance: AxiosInstance;
+  private apiKeyManager: ApiKeyManager;
 
-  constructor() {
+  constructor(apiKeyManager: ApiKeyManager) {
     super();
-    this.axiosInstance = axios.create({
+    this.apiKeyManager = apiKeyManager;
+  }
+
+  private createAxiosInstance(): AxiosInstance {
+    const apiKey = this.apiKeyManager.getCurrentKey();
+    return axios.create({
       baseURL: this.apiUrl,
       headers: {
-        'X-Naver-Client-Id': config.naver.clientId,
-        'X-Naver-Client-Secret': config.naver.clientSecret,
+        'X-Naver-Client-Id': apiKey.clientId,
+        'X-Naver-Client-Secret': apiKey.clientSecret,
       },
-      timeout: 30000, // 30 seconds timeout
+      timeout: 30000,
     });
   }
 
@@ -49,35 +56,66 @@ export class NaverShoppingProvider extends BaseSearchProvider {
     this.validateParameters(keyword, page);
     this.logRequest(keyword, page);
 
-    try {
-      const display = config.search.itemsPerPage;
-      const start = (page - 1) * display + 1;
+    let retryCount = 0;
+    const maxRetries = Math.min(3, config.naver.apiKeys.length);
 
-      const response = await this.axiosInstance.get<NaverSearchResponse>('', {
-        params: {
-          query: keyword,
-          display,
-          start,
-          sort: 'sim', // Sort by relevance
-        },
-      });
+    while (retryCount < maxRetries) {
+      try {
+        const apiKey = this.apiKeyManager.getNextKey();
+        const axiosInstance = this.createAxiosInstance();
+        
+        const display = config.search.itemsPerPage;
+        const start = (page - 1) * display + 1;
 
-      const { items, total } = response.data;
-      const results = this.transformResults(items);
+        const response = await axiosInstance.get<NaverSearchResponse>('', {
+          params: {
+            query: keyword,
+            display,
+            start,
+            sort: 'sim',
+          },
+        });
 
-      this.logResponse(keyword, results.length, total);
+        const { items, total } = response.data;
+        const results = this.transformResults(items);
 
-      return {
-        results,
-        totalCount: total,
-      };
-    } catch (error) {
-      this.handleError(error, keyword);
+        this.logResponse(keyword, results.length, total);
+
+        return {
+          results,
+          totalCount: total,
+        };
+      } catch (error) {
+        if (this.isRateLimitError(error)) {
+          const currentKey = this.apiKeyManager.getCurrentKey();
+          this.apiKeyManager.markKeyAsLimited(currentKey);
+          retryCount++;
+          
+          if (retryCount < maxRetries) {
+            logger.warn(`Rate limit hit, switching to next API key (retry ${retryCount}/${maxRetries})`);
+            await this.sleep(1000); // Wait 1 second before retry
+            continue;
+          }
+        }
+        
+        this.handleError(error, keyword);
+      }
     }
+
+    throw new ApiError('All API keys exhausted', 429, this.providerName);
+  }
+
+  private isRateLimitError(error: any): boolean {
+    if (error instanceof AxiosError) {
+      return error.response?.status === 429 || 
+             (error.response?.status === 400 && 
+              error.response?.data?.errorCode === 'SE01');
+    }
+    return false;
   }
 
   private transformResults(items: NaverSearchItem[]): SearchResult[] {
-    return items.map((item) => ({
+    return items.map((item, index) => ({
       productId: item.productId,
       title: this.cleanHtml(item.title),
       link: item.link,
@@ -92,13 +130,13 @@ export class NaverShoppingProvider extends BaseSearchProvider {
   }
 
   private cleanHtml(text: string): string {
-    // Remove HTML tags and decode HTML entities
     return text
       .replace(/<[^>]*>/g, '')
       .replace(/&lt;/g, '<')
       .replace(/&gt;/g, '>')
       .replace(/&amp;/g, '&')
       .replace(/&quot;/g, '"')
-      .replace(/&#39;/g, "'");
+      .replace(/&#39;/g, "'")
+      .replace(/&nbsp;/g, ' ');
   }
 }

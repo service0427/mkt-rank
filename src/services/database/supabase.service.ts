@@ -2,7 +2,7 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { config } from '../../config';
 import { logger } from '../../utils/logger';
 import {
-  Keyword,
+  SearchKeyword,
   Ranking,
   ApiUsage,
   DatabaseError,
@@ -17,24 +17,47 @@ export class SupabaseService {
   }
 
   /**
-   * Get all active keywords
+   * Get all keywords from search_keywords table
    */
-  async getActiveKeywords(): Promise<Keyword[]> {
+  async getAllKeywords(limit: number = 100): Promise<SearchKeyword[]> {
     try {
       const { data, error } = await this.client
-        .from('keywords')
+        .from('search_keywords')
         .select('*')
-        .eq('active', true)
-        .order('created_at', { ascending: true });
+        .order('total_count', { ascending: false })
+        .limit(limit);
 
       if (error) {
-        throw new DatabaseError(error.message, 'getActiveKeywords');
+        throw new DatabaseError(error.message, 'getAllKeywords');
       }
 
-      logger.info(`Fetched ${data?.length || 0} active keywords`);
+      logger.info(`Fetched ${data?.length || 0} keywords`);
       return data || [];
     } catch (error) {
-      logger.error('Failed to fetch active keywords', { error });
+      logger.error('Failed to fetch keywords', { error });
+      throw error;
+    }
+  }
+
+  /**
+   * Get keywords by specific criteria
+   */
+  async getKeywordsByCount(minCount: number = 1000): Promise<SearchKeyword[]> {
+    try {
+      const { data, error } = await this.client
+        .from('search_keywords')
+        .select('*')
+        .gte('total_count', minCount)
+        .order('total_count', { ascending: false });
+
+      if (error) {
+        throw new DatabaseError(error.message, 'getKeywordsByCount');
+      }
+
+      logger.info(`Fetched ${data?.length || 0} keywords with count >= ${minCount}`);
+      return data || [];
+    } catch (error) {
+      logger.error('Failed to fetch keywords by count', { error });
       throw error;
     }
   }
@@ -134,6 +157,74 @@ export class SupabaseService {
   }
 
   /**
+   * Check if rankings table exists
+   */
+  async checkRankingsTable(): Promise<boolean> {
+    try {
+      const { error } = await this.client
+        .from('rankings')
+        .select('id')
+        .limit(1);
+
+      if (error && error.code === '42P01') {
+        // Table doesn't exist
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      logger.error('Failed to check rankings table', { error });
+      return false;
+    }
+  }
+
+  /**
+   * Create rankings table if it doesn't exist
+   */
+  async createRankingsTable(): Promise<void> {
+    const createTableSQL = `
+      CREATE TABLE IF NOT EXISTS rankings (
+        id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+        keyword_id UUID REFERENCES search_keywords(id) ON DELETE CASCADE,
+        product_id TEXT NOT NULL,
+        title TEXT NOT NULL,
+        link TEXT,
+        image TEXT,
+        price INTEGER,
+        mall_name TEXT,
+        category1 TEXT,
+        category2 TEXT,
+        category3 TEXT,
+        category4 TEXT,
+        rank INTEGER NOT NULL,
+        collected_at TIMESTAMP WITH TIME ZONE NOT NULL,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW()),
+        UNIQUE(keyword_id, product_id, collected_at)
+      );
+      
+      CREATE INDEX IF NOT EXISTS idx_rankings_keyword_collected 
+        ON rankings(keyword_id, collected_at DESC);
+      CREATE INDEX IF NOT EXISTS idx_rankings_product 
+        ON rankings(product_id);
+    `;
+
+    try {
+      const { error } = await this.client.rpc('exec_sql', {
+        sql: createTableSQL
+      });
+
+      if (error) {
+        logger.warn('Table creation via RPC failed, table might already exist');
+      } else {
+        logger.info('Rankings table created successfully');
+      }
+    } catch (error) {
+      logger.error('Failed to create rankings table', { error });
+      throw error;
+    }
+  }
+
+  /**
    * Clean up old rankings (older than specified days)
    */
   async cleanupOldRankings(daysToKeep: number = 30): Promise<number> {
@@ -157,28 +248,6 @@ export class SupabaseService {
     } catch (error) {
       logger.error('Failed to cleanup old rankings', { error });
       throw error;
-    }
-  }
-
-  /**
-   * Update keyword last collected timestamp
-   */
-  async updateKeywordLastCollected(keywordId: string): Promise<void> {
-    try {
-      const { error } = await this.client
-        .from('keywords')
-        .update({ updated_at: new Date().toISOString() })
-        .eq('id', keywordId);
-
-      if (error) {
-        throw new DatabaseError(error.message, 'updateKeywordLastCollected');
-      }
-    } catch (error) {
-      logger.error('Failed to update keyword last collected', {
-        error,
-        keywordId,
-      });
-      // Don't throw - this is not critical
     }
   }
 }

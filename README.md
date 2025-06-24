@@ -26,54 +26,100 @@ npm install
 cp .env.example .env
 ```
 
+#### .env 파일 설정 예시:
+
+```env
+# Supabase 설정
+SUPABASE_URL=https://xxxxxxxxxxxx.supabase.co
+SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+
+# 네이버 API 키 (여러 개 설정 가능)
+# 형식: CLIENT_ID:CLIENT_SECRET,CLIENT_ID2:CLIENT_SECRET2
+NAVER_API_KEYS=abcd1234:secretkey1,efgh5678:secretkey2,ijkl9012:secretkey3
+
+# 앱 설정
+NODE_ENV=development
+LOG_LEVEL=info
+
+# 스케줄러 설정 (기본: 3시간마다)
+SCHEDULE_INTERVAL=0 */3 * * *
+```
+
 ### 3. Supabase 테이블 생성
 
-다음 SQL을 Supabase SQL Editor에서 실행합니다:
+**search_keywords 테이블은 이미 존재한다고 가정합니다.**
+
+rankings 테이블만 생성하면 됩니다:
 
 ```sql
--- 키워드 테이블
-CREATE TABLE keywords (
-  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
-  keyword TEXT NOT NULL UNIQUE,
-  category TEXT,
-  is_active BOOLEAN DEFAULT true,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW()),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW())
-);
-
 -- 순위 데이터 테이블
-CREATE TABLE rankings (
-  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
-  keyword_id UUID REFERENCES keywords(id) ON DELETE CASCADE,
+CREATE TABLE IF NOT EXISTS rankings (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  keyword_id UUID REFERENCES search_keywords(id) ON DELETE CASCADE,
   product_id TEXT NOT NULL,
-  product_name TEXT NOT NULL,
-  rank INTEGER NOT NULL,
-  price INTEGER,
-  review_count INTEGER DEFAULT 0,
-  mall_name TEXT,
+  title TEXT NOT NULL,
   link TEXT,
-  image_url TEXT,
+  image TEXT,
+  price INTEGER,
+  mall_name TEXT,
+  category1 TEXT,
+  category2 TEXT,
+  category3 TEXT,
+  category4 TEXT,
+  rank INTEGER NOT NULL,
   collected_at TIMESTAMP WITH TIME ZONE NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW()),
   UNIQUE(keyword_id, product_id, collected_at)
 );
 
--- API 사용량 추적 테이블
-CREATE TABLE api_usage (
-  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+-- 인덱스 생성
+CREATE INDEX IF NOT EXISTS idx_rankings_keyword_collected 
+  ON rankings(keyword_id, collected_at DESC);
+CREATE INDEX IF NOT EXISTS idx_rankings_product 
+  ON rankings(product_id);
+
+-- API 사용량 추적 테이블 (선택사항)
+CREATE TABLE IF NOT EXISTS api_usage (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   provider TEXT NOT NULL,
   endpoint TEXT,
+  keyword_id UUID,
   request_count INTEGER DEFAULT 1,
-  date DATE NOT NULL,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW()),
-  UNIQUE(provider, endpoint, date)
+  response_time_ms INTEGER,
+  success BOOLEAN DEFAULT true,
+  error_message TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW())
 );
-
--- 인덱스 생성
-CREATE INDEX idx_rankings_keyword_collected ON rankings(keyword_id, collected_at DESC);
-CREATE INDEX idx_rankings_product ON rankings(product_id);
-CREATE INDEX idx_api_usage_date ON api_usage(date, provider);
 ```
+
+## 테스트 실행
+
+### 1. 데이터베이스 연결 테스트
+
+```bash
+npm run test:db
+```
+
+이 명령어는:
+- Supabase 연결 확인
+- search_keywords 테이블에서 키워드 조회
+- rankings 테이블 존재 확인
+- API 사용량 로깅 테스트
+
+### 2. 네이버 쇼핑 API 테스트
+
+```bash
+# 기본 키워드 "노트북"으로 테스트
+npm run test:search
+
+# 특정 키워드로 테스트
+npm run test:search "무선이어폰"
+```
+
+이 명령어는:
+- 네이버 쇼핑 API 호출
+- 검색 결과 표시 (상위 10개)
+- API 키 사용 통계 표시
 
 ## 실행 방법
 
@@ -88,17 +134,6 @@ npm run dev
 ```bash
 npm run build
 npm start
-```
-
-## 키워드 추가
-
-Supabase 대시보드 또는 SQL Editor를 통해 키워드를 추가합니다:
-
-```sql
-INSERT INTO keywords (keyword, category) VALUES 
-  ('노트북', '전자제품'),
-  ('무선이어폰', '전자제품'),
-  ('운동화', '패션');
 ```
 
 ## 프로젝트 구조
