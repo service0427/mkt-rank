@@ -96,7 +96,7 @@ export class SupabaseService {
       const batchSize = 100;
       for (let i = 0; i < rankings.length; i += batchSize) {
         const batch = rankings.slice(i, i + batchSize);
-        const { error } = await this.client.from('shopping_rankings').insert(batch);
+        const { error } = await this.client.from('shopping_rankings_current').insert(batch);
 
         if (error) {
           throw new DatabaseError(
@@ -142,10 +142,9 @@ export class SupabaseService {
   ): Promise<ShoppingRanking[]> {
     try {
       const { data, error } = await this.client
-        .from('shopping_rankings')
+        .from('shopping_rankings_current')
         .select('*')
         .eq('keyword_id', keywordId)
-        .order('collected_at', { ascending: false })
         .order('rank', { ascending: true })
         .limit(limit);
 
@@ -166,8 +165,8 @@ export class SupabaseService {
   async checkRankingsTable(): Promise<boolean> {
     try {
       const { error } = await this.client
-        .from('shopping_rankings')
-        .select('id')
+        .from('shopping_rankings_current')
+        .select('keyword_id')
         .limit(1);
 
       if (error && error.code === '42P01') {
