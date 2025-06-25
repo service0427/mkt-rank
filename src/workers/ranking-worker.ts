@@ -79,6 +79,15 @@ export class RankingWorker {
     rankingQueue.on('progress', (job, progress) => {
       logger.debug(`Job ${job.id} progress: ${progress}%`);
     });
+
+    // Queue 전체 이벤트 로깅
+    rankingQueue.on('completed', (job, result) => {
+      logger.info(`Queue job completed: ${job.data.keyword}`, result);
+    });
+
+    rankingQueue.on('failed', (job, err) => {
+      logger.error(`Queue job failed: ${job.data.keyword}`, err);
+    });
   }
 
   async stop() {
