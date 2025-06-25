@@ -23,13 +23,6 @@ export class FileLogger {
 
   log(event: string, data?: any) {
     const timestamp = new Date().toISOString();
-    const logEntry = {
-      timestamp,
-      event,
-      data,
-      processId: process.pid,
-    };
-
     const logLine = `${timestamp} | ${event} | ${JSON.stringify(data || {})}\n`;
     
     try {
