@@ -23,79 +23,24 @@ router.get('/queue-status', async (_req, res) => {
   }
 });
 
-router.get('/collection-history', async (req, res) => {
-  try {
-    const hours = parseInt(req.query.hours as string) || 24;
-    const cutoffTime = new Date();
-    cutoffTime.setHours(cutoffTime.getHours() - hours);
-
-    const { data: apiUsage, error } = await supabase
-      .from('api_usage')
-      .select('*')
-      .gte('created_at', cutoffTime.toISOString())
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      logger.error('Failed to query api_usage:', error);
-      throw error;
-    }
-
-    const successCount = apiUsage?.filter((u: any) => u.success).length || 0;
-    const failureCount = apiUsage?.filter((u: any) => !u.success).length || 0;
-    const avgResponseTime = apiUsage?.length 
-      ? apiUsage.reduce((sum: number, u: any) => sum + (u.response_time || 0), 0) / apiUsage.length
-      : 0;
-
-    const hourlyStats: Record<string, any> = {};
-    apiUsage?.forEach((usage: any) => {
-      const hour = new Date(usage.created_at).getHours();
-      if (!hourlyStats[hour]) {
-        hourlyStats[hour] = { success: 0, failure: 0, avgTime: 0, count: 0 };
-      }
-      
-      if (usage.success) {
-        hourlyStats[hour].success++;
-      } else {
-        hourlyStats[hour].failure++;
-      }
-      
-      hourlyStats[hour].avgTime += usage.response_time || 0;
-      hourlyStats[hour].count++;
-    });
-
-    Object.keys(hourlyStats).forEach(hour => {
-      hourlyStats[hour].avgTime = hourlyStats[hour].avgTime / hourlyStats[hour].count;
-    });
-
-    res.json({
-      success: true,
-      data: {
-        summary: {
-          totalRequests: apiUsage?.length || 0,
-          successCount,
-          failureCount,
-          successRate: apiUsage?.length ? (successCount / apiUsage.length * 100).toFixed(2) : 0,
-          avgResponseTime: Math.round(avgResponseTime),
-        },
-        hourlyStats,
-        recentErrors: apiUsage?.filter((u: any) => !u.success && u.error_message)
-          .slice(0, 10)
-          .map((u: any) => ({
-            time: u.created_at,
-            error: u.error_message,
-            endpoint: u.endpoint,
-          })),
+router.get('/collection-history', async (_req, res) => {
+  // api_usage 테이블 사용하지 않음 - 빈 데이터 반환
+  res.json({
+    success: true,
+    data: {
+      summary: {
+        totalRequests: 0,
+        successCount: 0,
+        failureCount: 0,
+        successRate: 0,
+        avgResponseTime: 0,
       },
-      period: `${hours} hours`,
-      timestamp: new Date(),
-    });
-  } catch (error) {
-    logger.error('Failed to get collection history:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to get collection history',
-    });
-  }
+      hourlyStats: {},
+      recentErrors: [],
+    },
+    period: '24 hours',
+    timestamp: new Date(),
+  });
 });
 
 router.get('/keyword-performance', async (_req, res) => {
