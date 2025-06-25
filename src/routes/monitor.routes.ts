@@ -232,10 +232,11 @@ router.post('/trigger-collection', async (_req, res) => {
     const scheduler = (global as any).rankingQueueScheduler;
     
     if (!scheduler) {
-      return res.status(500).json({
+      res.status(500).json({
         success: false,
         error: 'Scheduler not initialized',
       });
+      return;
     }
     
     // 수동으로 키워드 큐에 추가

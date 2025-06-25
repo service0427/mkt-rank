@@ -1,6 +1,5 @@
 import { SlotKeywordService } from './services/keyword/slot-keyword.service';
 import { KeywordService } from './services/keyword/keyword.service';
-import { logger } from './utils/logger';
 
 const testSlotKeywords = async () => {
   console.log('Testing Slot Keywords Feature...\n');
@@ -47,7 +46,7 @@ const testSlotKeywords = async () => {
     if (slotKeywords.length > 0) {
       console.log('\nSlot-based keywords:');
       slotKeywords.slice(0, 5).forEach(k => {
-        console.log(`  - "${k.keyword}" (${k.field_name})`);
+        console.log(`  - "${k.keyword}" (${k.field_name || 'unknown'})`);
       });
       if (slotKeywords.length > 5) {
         console.log(`  ... and ${slotKeywords.length - 5} more`);
