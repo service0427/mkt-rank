@@ -1,9 +1,11 @@
 import express from 'express';
 import cors from 'cors';
+import path from 'path';
 import { NaverShoppingProvider } from '../providers/naver-shopping.provider';
 import { ApiKeyManager } from '../providers/api-key-manager';
 import { config, validateConfig } from '../config';
 import { logger } from '../utils/logger';
+import monitorRoutes from '../routes/monitor.routes';
 
 const app = express();
 const PORT = process.env.API_PORT || 3001;
@@ -11,6 +13,14 @@ const PORT = process.env.API_PORT || 3001;
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+// Monitoring routes
+app.use('/api/monitor', monitorRoutes);
+
+// Serve monitoring dashboard
+app.get('/monitor', (_req, res) => {
+  res.sendFile(path.join(__dirname, '../views/monitor-dashboard.html'));
+});
 
 // Initialize providers
 let naverProvider: NaverShoppingProvider;

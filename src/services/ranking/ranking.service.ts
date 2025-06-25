@@ -92,7 +92,7 @@ export class RankingService {
   /**
    * Collect rankings for a single keyword
    */
-  private async collectKeywordRankings(keyword: Keyword): Promise<void> {
+  public async collectKeywordRankings(keyword: Keyword): Promise<void> {
     logger.info(`Collecting rankings for keyword: ${keyword.keyword}`);
     const collectedAt = new Date();
     const allResults: SearchResult[] = [];
