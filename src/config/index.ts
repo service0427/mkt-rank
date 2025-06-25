@@ -38,7 +38,7 @@ export const config = {
   },
   search: {
     itemsPerPage: 100,
-    maxPages: 10,
+    maxPages: 1,  // 1페이지만 (100개 = 1~100위)
     delayBetweenRequests: 1000, // 1 second delay between requests
   },
   app: {

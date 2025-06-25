@@ -5,14 +5,18 @@
   "main": "dist/index.js",
   "scripts": {
     "dev": "tsx watch src/index.ts",
+    "dev:queue": "tsx watch src/index-queue.ts",
     "api": "tsx src/start-api.ts",
     "build": "tsc",
     "start": "node dist/index.js",
+    "start:queue": "node dist/index-queue.js",
     "test": "jest",
     "test:search": "tsx src/test-search.ts",
     "test:db": "tsx src/test-db.ts",
     "lint": "eslint src --ext .ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "redis:start": "docker-compose up -d redis",
+    "redis:stop": "docker-compose down"
   },
   "keywords": [
     "naver",
@@ -25,13 +29,16 @@
   "license": "ISC",
   "dependencies": {
     "@supabase/supabase-js": "^2.39.3",
+    "@types/bull": "^3.15.9",
     "@types/cors": "^2.8.19",
     "@types/cron": "^2.0.1",
     "@types/express": "^5.0.3",
     "@types/pg": "^8.15.4",
     "axios": "^1.6.5",
+    "bull": "^4.16.5",
     "cors": "^2.8.5",
     "cron": "^4.3.1",
+    "date-fns": "^4.1.0",
     "dotenv": "^16.3.1",
     "express": "^5.1.0",
     "node-cron": "^3.0.3",

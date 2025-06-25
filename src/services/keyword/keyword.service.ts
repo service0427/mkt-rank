@@ -1,0 +1,132 @@
+import { supabase } from '../../config/supabase';
+import { logger } from '../../utils/logger';
+
+export interface Keyword {
+  id: string;
+  keyword: string;
+  is_active: boolean;
+  priority?: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export class KeywordService {
+  async getActiveKeywords(): Promise<Keyword[]> {
+    try {
+      const { data, error } = await supabase
+        .from('shopping_keywords')
+        .select('*')
+        .eq('is_active', true)
+        .order('priority', { ascending: false });
+
+      if (error) {
+        throw error;
+      }
+
+      return data || [];
+    } catch (error) {
+      logger.error('Failed to fetch active keywords:', error);
+      throw error;
+    }
+  }
+
+  async getKeywordByName(keyword: string): Promise<Keyword | null> {
+    try {
+      const { data, error } = await supabase
+        .from('shopping_keywords')
+        .select('*')
+        .eq('keyword', keyword)
+        .single();
+
+      if (error) {
+        if (error.code === 'PGRST116') {
+          return null;
+        }
+        throw error;
+      }
+
+      return data;
+    } catch (error) {
+      logger.error(`Failed to fetch keyword ${keyword}:`, error);
+      throw error;
+    }
+  }
+
+  async getKeywordById(id: string): Promise<Keyword | null> {
+    try {
+      const { data, error } = await supabase
+        .from('shopping_keywords')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (error) {
+        if (error.code === 'PGRST116') {
+          return null;
+        }
+        throw error;
+      }
+
+      return data;
+    } catch (error) {
+      logger.error(`Failed to fetch keyword by id ${id}:`, error);
+      throw error;
+    }
+  }
+
+  async createKeyword(keyword: string, priority: number = 0): Promise<Keyword> {
+    try {
+      const { data, error } = await supabase
+        .from('shopping_keywords')
+        .insert({ keyword, priority, is_active: true })
+        .select()
+        .single();
+
+      if (error) {
+        throw error;
+      }
+
+      logger.info(`Created new keyword: ${keyword}`);
+      return data;
+    } catch (error) {
+      logger.error(`Failed to create keyword ${keyword}:`, error);
+      throw error;
+    }
+  }
+
+  async updateKeywordPriority(id: string, priority: number): Promise<void> {
+    try {
+      const { error } = await supabase
+        .from('shopping_keywords')
+        .update({ priority, updated_at: new Date().toISOString() })
+        .eq('id', id);
+
+      if (error) {
+        throw error;
+      }
+
+      logger.info(`Updated priority for keyword ${id} to ${priority}`);
+    } catch (error) {
+      logger.error(`Failed to update keyword priority:`, error);
+      throw error;
+    }
+  }
+
+  async toggleKeywordActive(id: string, isActive: boolean): Promise<void> {
+    try {
+      const { error } = await supabase
+        .from('shopping_keywords')
+        .update({ is_active: isActive, updated_at: new Date().toISOString() })
+        .eq('id', id);
+
+      if (error) {
+        throw error;
+      }
+
+      logger.info(`Toggled keyword ${id} active status to ${isActive}`);
+    } catch (error) {
+      logger.error(`Failed to toggle keyword active status:`, error);
+      throw error;
+    }
+  }
+}
