@@ -9,6 +9,10 @@ export interface Keyword {
   priority?: number;
   created_at: string;
   updated_at: string;
+  // Slot 키워드 추가 필드
+  source?: 'db' | 'slot';
+  slot_id?: string;
+  field_name?: string;
 }
 
 export class KeywordService {
