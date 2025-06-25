@@ -9,7 +9,12 @@
 </head>
 <body class="bg-gray-100">
     <div class="container mx-auto p-4">
-        <h1 class="text-3xl font-bold mb-6">MKT-Rank Monitoring Dashboard</h1>
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-3xl font-bold">MKT-Rank Monitoring Dashboard</h1>
+            <button id="triggerBtn" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                수동 실행
+            </button>
+        </div>
         
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             <div class="bg-white rounded-lg shadow p-4">
@@ -101,12 +106,14 @@
                 const performanceData = await performanceRes.json();
                 const healthData = await healthRes.json();
 
-                updateQueueStats(queueData.data);
-                updateApiStats(historyData.data);
-                updateSystemStats(healthData.data);
-                updateHourlyChart(historyData.data.hourlyStats);
-                updateKeywordTable(performanceData.data);
-                updateErrorLog(historyData.data.recentErrors);
+                if (queueData.success) updateQueueStats(queueData.data);
+                if (historyData.success && historyData.data) {
+                    updateApiStats(historyData.data);
+                    if (historyData.data.hourlyStats) updateHourlyChart(historyData.data.hourlyStats);
+                    if (historyData.data.recentErrors) updateErrorLog(historyData.data.recentErrors);
+                }
+                if (healthData.success) updateSystemStats(healthData.data);
+                if (performanceData.success) updateKeywordTable(performanceData.data);
 
             } catch (error) {
                 console.error('Failed to fetch monitoring data:', error);
@@ -120,10 +127,17 @@
         }
 
         function updateApiStats(data) {
-            document.getElementById('success-rate').textContent = data.summary.successRate;
-            document.getElementById('avg-response').textContent = data.summary.avgResponseTime;
-            document.getElementById('total-requests').textContent = data.summary.totalRequests;
-            document.getElementById('failed-requests').textContent = data.summary.failureCount;
+            if (data && data.summary) {
+                document.getElementById('success-rate').textContent = data.summary.successRate || 0;
+                document.getElementById('avg-response').textContent = data.summary.avgResponseTime || 0;
+                document.getElementById('total-requests').textContent = data.summary.totalRequests || 0;
+                document.getElementById('failed-requests').textContent = data.summary.failureCount || 0;
+            } else {
+                document.getElementById('success-rate').textContent = '-';
+                document.getElementById('avg-response').textContent = '-';
+                document.getElementById('total-requests').textContent = '0';
+                document.getElementById('failed-requests').textContent = '0';
+            }
         }
 
         function updateSystemStats(data) {
@@ -198,6 +212,38 @@
                 </div>
             `).join('');
         }
+
+        // Manual trigger button
+        document.getElementById('triggerBtn').addEventListener('click', async () => {
+            if (confirm('수동으로 수집을 시작하시겠습니까?')) {
+                const btn = document.getElementById('triggerBtn');
+                btn.disabled = true;
+                btn.textContent = '실행 중...';
+                
+                try {
+                    const response = await fetch('/api/monitor/trigger-collection', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        alert('수집이 시작되었습니다. Queue Status를 확인하세요.');
+                        fetchData(); // 즉시 데이터 새로고침
+                    } else {
+                        alert('실행 실패: ' + result.error);
+                    }
+                } catch (error) {
+                    alert('실행 중 오류 발생: ' + error.message);
+                } finally {
+                    btn.disabled = false;
+                    btn.textContent = '수동 실행';
+                }
+            }
+        });
 
         fetchData();
         setInterval(fetchData, 10000);

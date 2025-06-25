@@ -1,5 +1,6 @@
 import { supabase } from '../../config/supabase';
 import { logger } from '../../utils/logger';
+import { SlotKeywordService } from './slot-keyword.service';
 
 export interface Keyword {
   id: string;
@@ -11,10 +12,16 @@ export interface Keyword {
 }
 
 export class KeywordService {
+  private slotKeywordService: SlotKeywordService;
+
+  constructor() {
+    this.slotKeywordService = new SlotKeywordService();
+  }
+
   async getActiveKeywords(): Promise<Keyword[]> {
     try {
       const { data, error } = await supabase
-        .from('shopping_keywords')
+        .from('search_keywords')
         .select('*')
         .eq('is_active', true)
         .order('priority', { ascending: false });
@@ -23,7 +30,12 @@ export class KeywordService {
         throw error;
       }
 
-      return data || [];
+      const dbKeywords = data || [];
+
+      // Slot keywords 병합 (설정이 활성화된 경우)
+      const mergedKeywords = await this.slotKeywordService.getMergedKeywords(dbKeywords);
+      
+      return mergedKeywords;
     } catch (error) {
       logger.error('Failed to fetch active keywords:', error);
       throw error;
@@ -33,7 +45,7 @@ export class KeywordService {
   async getKeywordByName(keyword: string): Promise<Keyword | null> {
     try {
       const { data, error } = await supabase
-        .from('shopping_keywords')
+        .from('search_keywords')
         .select('*')
         .eq('keyword', keyword)
         .single();
@@ -55,7 +67,7 @@ export class KeywordService {
   async getKeywordById(id: string): Promise<Keyword | null> {
     try {
       const { data, error } = await supabase
-        .from('shopping_keywords')
+        .from('search_keywords')
         .select('*')
         .eq('id', id)
         .single();
@@ -77,7 +89,7 @@ export class KeywordService {
   async createKeyword(keyword: string, priority: number = 0): Promise<Keyword> {
     try {
       const { data, error } = await supabase
-        .from('shopping_keywords')
+        .from('search_keywords')
         .insert({ keyword, priority, is_active: true })
         .select()
         .single();
@@ -97,7 +109,7 @@ export class KeywordService {
   async updateKeywordPriority(id: string, priority: number): Promise<void> {
     try {
       const { error } = await supabase
-        .from('shopping_keywords')
+        .from('search_keywords')
         .update({ priority, updated_at: new Date().toISOString() })
         .eq('id', id);
 
@@ -115,7 +127,7 @@ export class KeywordService {
   async toggleKeywordActive(id: string, isActive: boolean): Promise<void> {
     try {
       const { error } = await supabase
-        .from('shopping_keywords')
+        .from('search_keywords')
         .update({ is_active: isActive, updated_at: new Date().toISOString() })
         .eq('id', id);
 

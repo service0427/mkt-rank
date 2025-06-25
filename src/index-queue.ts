@@ -5,6 +5,8 @@ import { startApiServer } from './api/server';
 
 // Create scheduler instance
 const scheduler = new RankingQueueScheduler();
+// Make scheduler globally accessible for manual trigger
+(global as any).rankingQueueScheduler = scheduler;
 
 // Graceful shutdown handling
 const gracefulShutdown = async (signal: string) => {

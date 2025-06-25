@@ -35,7 +35,10 @@ router.get('/collection-history', async (req, res) => {
       .gte('created_at', cutoffTime.toISOString())
       .order('created_at', { ascending: false });
 
-    if (error) throw error;
+    if (error) {
+      logger.error('Failed to query api_usage:', error);
+      throw error;
+    }
 
     const successCount = apiUsage?.filter((u: any) => u.success).length || 0;
     const failureCount = apiUsage?.filter((u: any) => !u.success).length || 0;
@@ -98,17 +101,20 @@ router.get('/collection-history', async (req, res) => {
 router.get('/keyword-performance', async (_req, res) => {
   try {
     const { data: keywords, error: keywordError } = await supabase
-      .from('shopping_keywords')
+      .from('search_keywords')
       .select('*')
       .eq('is_active', true);
 
-    if (keywordError) throw keywordError;
+    if (keywordError) {
+      logger.error('Failed to query keywords:', keywordError);
+      throw keywordError;
+    }
 
     const performanceData = [];
 
     for (const keyword of keywords || []) {
       const { data: recentRankings, error: rankingError } = await supabase
-        .from('shopping_rankings')
+        .from('shopping_rankings_current')
         .select('created_at')
         .eq('keyword_id', keyword.id)
         .order('created_at', { ascending: false })
@@ -160,8 +166,9 @@ router.get('/system-health', async (_req, res) => {
     const memoryUsage = process.memoryUsage();
     const uptime = process.uptime();
 
-    const { data: dbSize, error: dbError } = await supabase
-      .rpc('get_database_size');
+    // Database size query removed as it may not exist
+    const dbSize = null;
+    const dbError = null;
 
     const queueStatus = await getQueueStatus();
 
@@ -213,6 +220,37 @@ router.get('/execution-logs', async (_req, res) => {
     res.status(500).json({
       success: false,
       error: 'Failed to get execution logs',
+    });
+  }
+});
+
+router.post('/trigger-collection', async (_req, res) => {
+  try {
+    logger.info('Manual collection triggered via API');
+    
+    // Queue 스케줄러 인스턴스에 접근하기 위해 global 사용
+    const scheduler = (global as any).rankingQueueScheduler;
+    
+    if (!scheduler) {
+      return res.status(500).json({
+        success: false,
+        error: 'Scheduler not initialized',
+      });
+    }
+    
+    // 수동으로 키워드 큐에 추가
+    await scheduler.runManual();
+    
+    res.json({
+      success: true,
+      message: 'Collection triggered successfully',
+      timestamp: new Date(),
+    });
+  } catch (error) {
+    logger.error('Failed to trigger collection:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to trigger collection',
     });
   }
 });
