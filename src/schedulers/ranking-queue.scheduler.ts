@@ -2,6 +2,7 @@ import cron from 'node-cron';
 import { KeywordService } from '../services/keyword/keyword.service';
 import { addKeywordToQueue, getQueueStatus, clearQueue } from '../queues/ranking-queue';
 import { RankingWorker } from '../workers/ranking-worker';
+import { queueMonitor } from '../queues/queue-monitor';
 import { logger } from '../utils/logger';
 import { FileLogger } from '../utils/file-logger';
 import { config } from '../config';
@@ -97,7 +98,12 @@ export class RankingQueueScheduler {
 
       const keywords = await this.keywordService.getActiveKeywords();
       logger.info(`Found ${keywords.length} active keywords to enqueue`);
-      this.fileLogger.logCollectionStart(keywords.length);
+      
+      // Queue에 추가하기 전에 전체 수집 시작 로그
+      if (keywords.length > 0) {
+        this.fileLogger.logCollectionStart(keywords.length);
+        queueMonitor.startCollection(keywords.length);
+      }
 
       let addedCount = 0;
       for (const keyword of keywords) {
@@ -108,9 +114,11 @@ export class RankingQueueScheduler {
         }
       }
 
-      const duration = Date.now() - startTime;
-      logger.info(`Enqueued ${addedCount} keywords in ${duration}ms`);
-      this.fileLogger.logCollectionEnd(addedCount, 0, duration);
+      const enqueueDuration = Date.now() - startTime;
+      logger.info(`Enqueued ${addedCount} keywords in ${enqueueDuration}ms`);
+      
+      // 주의: 여기서는 Queue에 추가만 했고, 실제 처리는 Worker에서 비동기로 진행됨
+      // 따라서 여기서 COLLECTION_END를 기록하면 안됨
 
     } catch (error) {
       logger.error('Keyword enqueueing failed', {

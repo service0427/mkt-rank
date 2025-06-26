@@ -27,8 +27,7 @@ export class KeywordService {
       const { data, error } = await supabase
         .from('search_keywords')
         .select('*')
-        .eq('is_active', true)
-        .order('priority', { ascending: false });
+        .eq('is_active', true);
 
       if (error) {
         throw error;
