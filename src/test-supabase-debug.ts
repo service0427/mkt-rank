@@ -28,13 +28,29 @@ async function testSupabaseDebug() {
       console.log('Successfully fetched keywords:', keywords?.length);
     }
     
-    // 2. Test insert to shopping_rankings_current
-    console.log('\n2. Testing insert to shopping_rankings_current...');
+    // 2. Get first keyword for testing
+    console.log('\n2. Getting a real keyword for testing...');
+    const { data: firstKeyword } = await supabase
+      .from('search_keywords')
+      .select('id, keyword')
+      .eq('is_active', true)
+      .limit(1)
+      .single();
+      
+    if (!firstKeyword) {
+      console.log('No active keyword found');
+      return;
+    }
+    
+    console.log('Using keyword:', firstKeyword.keyword, 'ID:', firstKeyword.id);
+    
+    // 3. Test insert to shopping_rankings_current
+    console.log('\n3. Testing insert to shopping_rankings_current...');
     const testData = {
-      keyword_id: 'test-keyword-id',
-      product_id: 'test-product-id',
-      rank: 1,
-      title: 'Test Product',
+      keyword_id: firstKeyword.id,
+      product_id: 'TEST-PRODUCT-' + Date.now(),
+      rank: 999,
+      title: 'Test Product Debug',
       lprice: 10000,
       collected_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
@@ -52,12 +68,13 @@ async function testSupabaseDebug() {
       console.log('Successfully inserted test data:', insertData);
     }
     
-    // 3. Clean up test data
-    console.log('\n3. Cleaning up test data...');
+    // 4. Clean up test data
+    console.log('\n4. Cleaning up test data...');
     const { error: deleteError } = await supabase
       .from('shopping_rankings_current')
       .delete()
-      .eq('keyword_id', 'test-keyword-id');
+      .eq('keyword_id', firstKeyword.id)
+      .eq('rank', 999);
       
     if (deleteError) {
       console.error('Error cleaning up:', deleteError);
@@ -65,8 +82,8 @@ async function testSupabaseDebug() {
       console.log('Test data cleaned up');
     }
     
-    // 4. Check RLS policies
-    console.log('\n4. Checking table access...');
+    // 5. Check RLS policies
+    console.log('\n5. Checking table access...');
     const tables = ['shopping_rankings_current', 'shopping_rankings_hourly', 'shopping_rankings_daily'];
     
     for (const table of tables) {
