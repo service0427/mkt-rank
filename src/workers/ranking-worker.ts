@@ -4,6 +4,7 @@ import { RankingService } from '../services/ranking/ranking.service';
 import { KeywordService } from '../services/keyword/keyword.service';
 import { logger } from '../utils/logger';
 import { FileLogger } from '../utils/file-logger';
+import { queueMonitor } from '../queues/queue-monitor';
 
 export class RankingWorker {
   private rankingService: RankingService;
@@ -20,6 +21,9 @@ export class RankingWorker {
 
   async start() {
     logger.info(`Starting ranking worker with concurrency: ${this.concurrency}`);
+    
+    // Ensure queueMonitor is initialized (import causes constructor to run)
+    logger.info('Queue monitor initialized');
 
     rankingQueue.process(this.concurrency, async (job: Job<RankingJobData>) => {
       const { keyword } = job.data;
