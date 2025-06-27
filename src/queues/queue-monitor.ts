@@ -1,6 +1,9 @@
 import { rankingQueue } from './ranking-queue';
 import { FileLogger } from '../utils/file-logger';
 import { logger } from '../utils/logger';
+import { LocalPostgresService } from '../services/database/local-postgres.service';
+import { SupabaseService } from '../services/database/supabase.service';
+import { SimplifiedDataSyncService } from '../services/sync/data-sync-simplified.service';
 
 export class QueueMonitor {
   private fileLogger: FileLogger;
@@ -69,9 +72,36 @@ export class QueueMonitor {
         
         logger.info(`Collection completed: ${this.completedKeywords} success, ${this.failedKeywords} failed, duration: ${duration}ms`);
         
+        // 모든 키워드 수집이 완료되면 hourly sync 실행
+        await this.runHourlySyncAfterCollection();
+        
         // 초기화
         this.resetCounters();
       }
+    }
+  }
+
+  private async runHourlySyncAfterCollection() {
+    try {
+      logger.info('Running hourly sync after all keywords collected...');
+      
+      const localDb = new LocalPostgresService();
+      const supabase = new SupabaseService();
+      const syncService = new SimplifiedDataSyncService(localDb, supabase);
+      
+      // Get active keywords
+      const keywords = await supabase.getActiveKeywords();
+      const keywordIds = keywords.map(k => k.id);
+      
+      if (keywordIds.length > 0) {
+        logger.info(`Syncing hourly snapshots for ${keywordIds.length} keywords`);
+        await syncService.syncHourlySnapshots(keywordIds);
+        logger.info('Hourly sync completed successfully');
+      }
+      
+      await localDb.cleanup();
+    } catch (error) {
+      logger.error('Failed to run hourly sync after collection:', error);
     }
   }
 

@@ -34,7 +34,7 @@ export const config = {
     apiUrl: 'https://openapi.naver.com/v1/search/shop.json',
   },
   scheduler: {
-    cronExpression: process.env.SCHEDULE_INTERVAL || '0 */3 * * *',
+    cronExpression: process.env.SCHEDULE_INTERVAL || '0 * * * *',
   },
   search: {
     itemsPerPage: 100,
