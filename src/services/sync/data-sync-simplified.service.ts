@@ -265,11 +265,10 @@ export class SimplifiedDataSyncService {
       // 1. 현재 순위 동기화
       await this.syncCurrentRankings(keywordIds);
 
-      // 2. 시간별 스냅샷 동기화 (정각인 경우)
+      // 2. 시간별 스냅샷 동기화는 queue-monitor에서 모든 수집 완료 후 실행
+      // 개별 키워드 수집 시에는 실행하지 않음
       const now = new Date();
-      if (now.getMinutes() === 0) {
-        await this.syncHourlySnapshots(keywordIds);
-      }
+      logger.info(`Skipping hourly sync during individual collection at ${now.toISOString()}`);
 
       // 3. 일별 스냅샷 동기화 (자정인 경우)
       if (now.getHours() === 0 && now.getMinutes() === 0) {
