@@ -140,20 +140,26 @@ export class SimplifiedDataSyncService {
 
       for (const keywordId of keywordIds) {
         // 어제의 마지막 시간(23시)의 hourly 데이터에서 가져오기
-        const yesterdayLastHour = new Date();
-        yesterdayLastHour.setDate(yesterdayLastHour.getDate() - 1);
-        yesterdayLastHour.setHours(23, 0, 0, 0);
+        const yesterdayStart = new Date();
+        yesterdayStart.setDate(yesterdayStart.getDate() - 1);
+        yesterdayStart.setHours(23, 0, 0, 0);
+        
+        const yesterdayEnd = new Date();
+        yesterdayEnd.setDate(yesterdayEnd.getDate() - 1);
+        yesterdayEnd.setHours(23, 59, 59, 999);
         
         const { data: yesterdayData } = await this.supabase.client
           .from('shopping_rankings_hourly')
           .select('*')
           .eq('keyword_id', keywordId)
-          .eq('hour', yesterdayLastHour.toISOString())
+          .gte('hour', yesterdayStart.toISOString())
+          .lte('hour', yesterdayEnd.toISOString())
+          .order('hour', { ascending: false })
           .order('rank', { ascending: true })
           .limit(100);
 
         if (!yesterdayData || yesterdayData.length === 0) {
-          logger.warn(`No hourly data found for keyword ${keywordId} at ${yesterdayLastHour.toISOString()}`);
+          logger.warn(`No hourly data found for keyword ${keywordId} between ${yesterdayStart.toISOString()} and ${yesterdayEnd.toISOString()}`);
           continue;
         }
 
