@@ -60,12 +60,12 @@ async function testDailyWithToday() {
     }
     
     // Check results
-    const { data: dailyData } = await supabase.client
+    const { count } = await supabase.client
       .from('shopping_rankings_daily')
-      .select('date, COUNT(*)')
+      .select('*', { count: 'exact', head: true })
       .eq('date', '2025-06-26');
       
-    logger.info('Daily data saved successfully');
+    logger.info(`Daily data saved successfully. Total records for 2025-06-26: ${count}`);
     
   } catch (error) {
     logger.error('Test failed:', error);
