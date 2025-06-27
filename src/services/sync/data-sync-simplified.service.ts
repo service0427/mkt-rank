@@ -137,18 +137,22 @@ export class SimplifiedDataSyncService {
       const yesterday = new Date();
       yesterday.setDate(yesterday.getDate() - 1);
       yesterday.setHours(23, 59, 59, 999);
+      
+      logger.info(`Daily sync will save data for date: ${yesterday.toISOString().split('T')[0]}`);
 
       for (const keywordId of keywordIds) {
-        // 어제의 마지막 시간(23시)의 hourly 데이터에서 가져오기
+        // 어제의 22시부터 23:59까지의 hourly 데이터에서 가져오기
         const yesterdayStart = new Date();
         yesterdayStart.setDate(yesterdayStart.getDate() - 1);
-        yesterdayStart.setHours(23, 0, 0, 0);
+        yesterdayStart.setHours(22, 0, 0, 0);
         
         const yesterdayEnd = new Date();
         yesterdayEnd.setDate(yesterdayEnd.getDate() - 1);
         yesterdayEnd.setHours(23, 59, 59, 999);
         
-        const { data: yesterdayData } = await this.supabase.client
+        logger.info(`Looking for hourly data for keyword ${keywordId} between ${yesterdayStart.toISOString()} and ${yesterdayEnd.toISOString()}`);
+        
+        const { data: yesterdayData, error: fetchError } = await this.supabase.client
           .from('shopping_rankings_hourly')
           .select('*')
           .eq('keyword_id', keywordId)
@@ -157,6 +161,11 @@ export class SimplifiedDataSyncService {
           .order('hour', { ascending: false })
           .order('rank', { ascending: true })
           .limit(100);
+          
+        if (fetchError) {
+          logger.error(`Error fetching hourly data: ${fetchError.message}`);
+          continue;
+        }
 
         if (!yesterdayData || yesterdayData.length === 0) {
           logger.warn(`No hourly data found for keyword ${keywordId} between ${yesterdayStart.toISOString()} and ${yesterdayEnd.toISOString()}`);
