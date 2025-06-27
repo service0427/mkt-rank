@@ -142,16 +142,19 @@ export class SimplifiedDataSyncService {
 
       for (const keywordId of keywordIds) {
         // KST 기준 어제 23시 데이터를 찾기 위해 UTC 시간 계산
-        const kstNow = new Date();
-        kstNow.setHours(kstNow.getHours() + 9); // UTC to KST
+        const now = new Date();
+        logger.info(`Current time: ${now.toISOString()}`);
         
-        const yesterdayStart = new Date();
-        yesterdayStart.setDate(kstNow.getDate() - 1);
-        yesterdayStart.setHours(14, 0, 0, 0);  // UTC 14시 = KST 23시
+        const yesterdayStart = new Date(now);
+        yesterdayStart.setDate(yesterdayStart.getDate() - 1);
+        yesterdayStart.setHours(13, 0, 0, 0);  // 어제 UTC 13시 = 어제 KST 22시
         
-        const yesterdayEnd = new Date();
-        yesterdayEnd.setDate(kstNow.getDate() - 1);
-        yesterdayEnd.setHours(14, 59, 59, 999);  // UTC 14:59 = KST 23:59
+        const yesterdayEnd = new Date(now);
+        yesterdayEnd.setDate(yesterdayEnd.getDate() - 1);
+        yesterdayEnd.setHours(14, 59, 59, 999);  // 어제 UTC 14:59 = 어제 KST 23:59
+        
+        logger.info(`Date calculation - Yesterday start before: ${new Date(now).toISOString()}, after setDate(-1): ${yesterdayStart.toISOString()}`);
+        logger.info(`Date calculation - Yesterday end before: ${new Date(now).toISOString()}, after setDate(-1): ${yesterdayEnd.toISOString()}`);
         
         logger.info(`Looking for hourly data for keyword ${keywordId} between ${yesterdayStart.toISOString()} and ${yesterdayEnd.toISOString()}`);
         
