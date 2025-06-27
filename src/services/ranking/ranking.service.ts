@@ -144,8 +144,8 @@ export class RankingService {
       // Save to local PostgreSQL first
       await this.localDbService.saveRankings(rankings);
       
-      // Sync latest rankings to Supabase for dashboard
-      await this.dataSyncService.syncCurrentRankings([keyword.id]);
+      // Run full sync (includes current, hourly if at top of hour, daily if midnight)
+      await this.dataSyncService.runFullSync([keyword.id]);
       
       // Update last collected timestamp in Supabase
       await this.supabaseService.updateKeywordLastCollected(keyword.id);
