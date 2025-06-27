@@ -55,8 +55,12 @@ export class QueueMonitor {
   private async checkCollectionComplete() {
     const processed = this.completedKeywords + this.failedKeywords;
     
+    logger.info(`Checking collection complete: processed=${processed}, total=${this.totalKeywords}`);
+    
     if (processed >= this.totalKeywords && this.totalKeywords > 0) {
       const queueStatus = await rankingQueue.getJobCounts();
+      
+      logger.info(`Queue status: waiting=${queueStatus.waiting}, active=${queueStatus.active}`);
       
       // Queue가 비어있는지 확인
       if (queueStatus.waiting === 0 && queueStatus.active === 0) {
