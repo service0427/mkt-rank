@@ -141,14 +141,17 @@ export class SimplifiedDataSyncService {
       logger.info(`Daily sync will save data for date: ${yesterday.toISOString().split('T')[0]}`);
 
       for (const keywordId of keywordIds) {
-        // 어제의 22시부터 23:59까지의 hourly 데이터에서 가져오기
+        // KST 기준 어제 23시 데이터를 찾기 위해 UTC 시간 계산
+        const kstNow = new Date();
+        kstNow.setHours(kstNow.getHours() + 9); // UTC to KST
+        
         const yesterdayStart = new Date();
-        yesterdayStart.setDate(yesterdayStart.getDate() - 1);
-        yesterdayStart.setHours(22, 0, 0, 0);
+        yesterdayStart.setDate(kstNow.getDate() - 1);
+        yesterdayStart.setHours(14, 0, 0, 0);  // UTC 14시 = KST 23시
         
         const yesterdayEnd = new Date();
-        yesterdayEnd.setDate(yesterdayEnd.getDate() - 1);
-        yesterdayEnd.setHours(23, 59, 59, 999);
+        yesterdayEnd.setDate(kstNow.getDate() - 1);
+        yesterdayEnd.setHours(14, 59, 59, 999);  // UTC 14:59 = KST 23:59
         
         logger.info(`Looking for hourly data for keyword ${keywordId} between ${yesterdayStart.toISOString()} and ${yesterdayEnd.toISOString()}`);
         
@@ -285,8 +288,10 @@ export class SimplifiedDataSyncService {
       const now = new Date();
       logger.info(`Skipping hourly sync during individual collection at ${now.toISOString()}`);
 
-      // 3. 일별 스냅샷 동기화 (자정인 경우)
-      if (now.getHours() === 0 && now.getMinutes() === 0) {
+      // 3. 일별 스냅샷 동기화 (KST 자정인 경우)
+      // UTC 15시 = KST 00시
+      if (now.getHours() === 15 && now.getMinutes() === 0) {
+        logger.info('Running daily snapshot sync at KST midnight');
         await this.syncDailySnapshots(keywordIds);
       }
 
