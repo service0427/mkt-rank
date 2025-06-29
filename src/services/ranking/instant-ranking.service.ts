@@ -1,5 +1,8 @@
 import { KeywordService } from '../keyword/keyword.service';
 import { RankingService } from './ranking.service';
+import { SimplifiedDataSyncService } from '../sync/data-sync-simplified.service';
+import { LocalPostgresService } from '../database/local-postgres.service';
+import { SupabaseService } from '../database/supabase.service';
 import { logger } from '../../utils/logger';
 
 export interface KeywordCheckResult {
@@ -13,10 +16,14 @@ export interface KeywordCheckResult {
 export class InstantRankingService {
   private keywordService: KeywordService;
   private rankingService: RankingService;
+  private syncService: SimplifiedDataSyncService;
 
   constructor() {
     this.keywordService = new KeywordService();
     this.rankingService = new RankingService();
+    const localDb = new LocalPostgresService();
+    const supabase = new SupabaseService();
+    this.syncService = new SimplifiedDataSyncService(localDb, supabase);
   }
 
   /**
@@ -61,11 +68,16 @@ export class InstantRankingService {
         };
         await this.rankingService.collectKeywordRankings(searchKeyword);
         
+        // 4. 즉시 Supabase 동기화 (current, hourly)
+        logger.info(`Syncing rankings to Supabase for keyword: ${validatedKeyword}`);
+        await this.syncService.syncCurrentRankings([newKeyword.id]);
+        await this.syncService.syncHourlySnapshots([newKeyword.id]);
+        
         return {
           keyword: validatedKeyword,
           keywordId: newKeyword.id,
           isNew: true,
-          message: '키워드 추가 및 순위 수집 완료'
+          message: '키워드 추가, 순위 수집 및 동기화 완료'
         };
       } catch (collectError) {
         logger.error(`Failed to collect rankings for ${validatedKeyword}:`, collectError);
