@@ -30,13 +30,24 @@ export class SimplifiedDataSyncService {
           continue;
         }
 
-        // 이전 순위 정보 가져오기 (1시간 전 데이터)
+        // 이전 순위 정보 가져오기 (현재 저장된 데이터)
         const prevRankings = await this.getPreviousRankings(keywordId);
         const prevRankMap = new Map(
           prevRankings.map(r => [r.product_id, r.rank])
         );
 
-        // shopping_rankings_current 테이블 업데이트
+        // 기존 데이터 삭제 (현재 순위 테이블은 최신 데이터만 유지)
+        const { error: deleteError } = await this.supabase.client
+          .from('shopping_rankings_current')
+          .delete()
+          .eq('keyword_id', keywordId);
+          
+        if (deleteError) {
+          logger.error(`Failed to delete old rankings for keyword ${keywordId}:`, deleteError);
+          continue;
+        }
+
+        // shopping_rankings_current 테이블에 새 데이터 삽입
         const { error } = await this.supabase.client
           .from('shopping_rankings_current')
           .upsert(
@@ -62,7 +73,7 @@ export class SimplifiedDataSyncService {
         if (error) {
           logger.error(`Failed to sync current rankings for keyword ${keywordId}:`, error);
         } else {
-          logger.info(`Synced ${latestRankings.length} current rankings for keyword ${keywordId}`);
+          logger.info(`Deleted old and synced ${latestRankings.length} current rankings for keyword ${keywordId}`);
         }
       }
 
