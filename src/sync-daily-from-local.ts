@@ -15,7 +15,11 @@ async function syncDailyFromLocal() {
     // Get active keywords
     const keywords = await supabase.getActiveKeywords();
     
+    logger.info(`Processing ${keywords.length} keywords...`);
+    
     for (const keyword of keywords) {
+      logger.info(`Checking data for keyword: ${keyword.keyword} (ID: ${keyword.id})`);
+      
       // Get data from local DB for 27일 14:00 UTC (23:00 KST)
       const query = `
         SELECT * FROM shopping_rankings
@@ -29,8 +33,22 @@ async function syncDailyFromLocal() {
       const result = await localDb.pool.query(query, [keyword.id]);
       const rankings = result.rows;
       
+      logger.info(`Query result: ${rankings.length} rows found`);
+      
       if (rankings.length === 0) {
-        logger.warn(`No data found for keyword ${keyword.keyword}`);
+        // Check what data exists for this keyword
+        const checkQuery = `
+          SELECT DATE_TRUNC('hour', collected_at) as hour, COUNT(*) as count
+          FROM shopping_rankings
+          WHERE keyword_id = $1
+            AND collected_at >= '2025-06-27 00:00:00'
+          GROUP BY hour
+          ORDER BY hour DESC
+          LIMIT 5
+        `;
+        const checkResult = await localDb.pool.query(checkQuery, [keyword.id]);
+        logger.warn(`No data found for keyword ${keyword.keyword} at 14:00 UTC`);
+        logger.info(`Available hours for this keyword:`, checkResult.rows);
         continue;
       }
       
