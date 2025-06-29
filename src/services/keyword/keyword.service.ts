@@ -1,6 +1,7 @@
 import { supabase } from '../../config/supabase';
 import { logger } from '../../utils/logger';
 import { SlotKeywordService } from './slot-keyword.service';
+import { NaverKeywordApiService } from './naver-keyword-api.service';
 
 export interface Keyword {
   id: string;
@@ -17,9 +18,11 @@ export interface Keyword {
 
 export class KeywordService {
   private slotKeywordService: SlotKeywordService;
+  private naverKeywordApiService: NaverKeywordApiService;
 
   constructor() {
     this.slotKeywordService = new SlotKeywordService();
+    this.naverKeywordApiService = new NaverKeywordApiService();
   }
 
   async getActiveKeywords(): Promise<Keyword[]> {
@@ -89,11 +92,23 @@ export class KeywordService {
     }
   }
 
-  async createKeyword(keyword: string, priority: number = 0): Promise<Keyword> {
+  async createKeyword(keyword: string): Promise<Keyword> {
     try {
+      // 네이버 API로 검색량 가져오기
+      const searchVolume = await this.naverKeywordApiService.analyzeKeyword(keyword);
+      
       const { data, error } = await supabase
         .from('search_keywords')
-        .insert({ keyword, priority, is_active: true })
+        .insert({ 
+          keyword, 
+          is_active: true,
+          pc_count: searchVolume?.pc || 0,
+          mobile_count: searchVolume?.mobile || 0,
+          total_count: searchVolume?.total || 0,
+          pc_ratio: searchVolume?.pcRatio || 0,
+          mobile_ratio: searchVolume?.mobileRatio || 0,
+          user_id: null
+        })
         .select()
         .single();
 
