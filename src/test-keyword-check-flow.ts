@@ -2,11 +2,9 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 import { KeywordService } from './services/keyword/keyword.service';
-import { InstantRankingService } from './services/ranking/instant-ranking.service';
 
 async function testKeywordCheckFlow() {
   const keywordService = new KeywordService();
-  const instantRankingService = new InstantRankingService();
   
   console.log('=== 키워드 체크 플로우 테스트 ===\n');
   
