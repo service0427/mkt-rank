@@ -217,16 +217,14 @@ export class SimplifiedDataSyncService {
   }
 
   /**
-   * 이전 순위 정보 가져오기 (1시간 전)
+   * 이전 순위 정보 가져오기 (현재 저장된 데이터)
    */
   private async getPreviousRankings(keywordId: string): Promise<any[]> {
-    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
-    
+    // 현재 shopping_rankings_current에 있는 데이터가 이전 순위
     const { data } = await this.supabase.client
       .from('shopping_rankings_current')
       .select('product_id, rank')
-      .eq('keyword_id', keywordId)
-      .lte('collected_at', oneHourAgo.toISOString());
+      .eq('keyword_id', keywordId);
 
     return data || [];
   }
