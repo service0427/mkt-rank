@@ -144,19 +144,26 @@ app.get('/api/search/full', async (req, res) => {
 
 // Start server
 export function startApiServer() {
+  console.log('Starting API server...');
+  
   // HTTP 서버 시작
   const httpServer = http.createServer(app);
   httpServer.listen(HTTP_PORT, () => {
+    console.log(`HTTP API server running on http://localhost:${HTTP_PORT}`);
     logger.info(`HTTP API server running on http://localhost:${HTTP_PORT}`);
   });
 
   // HTTPS 서버 설정 및 시작
   try {
+    console.log('Setting up HTTPS server...');
     let httpsOptions;
     
     // Let's Encrypt 인증서 확인
     const letsEncryptPath = '/etc/letsencrypt/live/mkt.techb.kr';
+    console.log(`Checking Let's Encrypt certificate at: ${letsEncryptPath}`);
+    
     if (fs.existsSync(`${letsEncryptPath}/privkey.pem`) && fs.existsSync(`${letsEncryptPath}/fullchain.pem`)) {
+      console.log('Found Let\'s Encrypt certificate');
       logger.info('Using Let\'s Encrypt certificate');
       httpsOptions = {
         key: fs.readFileSync(`${letsEncryptPath}/privkey.pem`),
@@ -165,12 +172,14 @@ export function startApiServer() {
     } 
     // 자체 서명 인증서 확인
     else if (fs.existsSync(path.join(__dirname, '../../certs/key.pem'))) {
+      console.log('Found self-signed certificate');
       logger.info('Using self-signed certificate');
       httpsOptions = {
         key: fs.readFileSync(path.join(__dirname, '../../certs/key.pem')),
         cert: fs.readFileSync(path.join(__dirname, '../../certs/cert.pem'))
       };
     } else {
+      console.log('No SSL certificate found, running HTTP only');
       logger.warn('No SSL certificate found, running HTTP only');
       logEndpoints();
       return;
@@ -178,10 +187,12 @@ export function startApiServer() {
 
     const httpsServer = https.createServer(httpsOptions, app);
     httpsServer.listen(HTTPS_PORT, () => {
+      console.log(`HTTPS API server running on https://localhost:${HTTPS_PORT}`);
       logger.info(`HTTPS API server running on https://localhost:${HTTPS_PORT}`);
       logEndpoints();
     });
   } catch (error) {
+    console.error('Failed to start HTTPS server:', error);
     logger.error('Failed to start HTTPS server:', error);
     logger.info('Running in HTTP only mode');
     logEndpoints();
