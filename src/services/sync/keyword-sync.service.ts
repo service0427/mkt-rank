@@ -19,14 +19,17 @@ export class KeywordSyncService {
    */
   async syncMissingKeywords(dryRun: boolean = false): Promise<void> {
     try {
+      console.log('Starting keyword synchronization...');
       logger.info('Starting keyword synchronization...');
 
       // 1. campaigns에서 키워드 추출
       const campaignKeywords = await this.extractKeywordsFromCampaigns();
+      console.log(`Found ${campaignKeywords.size} keywords from campaigns`);
       logger.info(`Found ${campaignKeywords.size} keywords from campaigns`);
 
       // 2. shopping_rankings_current에서 사용 중인 keyword_id 찾기
       const missingKeywordIds = await this.findMissingKeywordIds();
+      console.log(`Found ${missingKeywordIds.length} keyword IDs without search_keywords entry`);
       logger.info(`Found ${missingKeywordIds.length} keyword IDs without search_keywords entry`);
 
       // 3. 두 소스에서 찾은 키워드 처리
@@ -56,8 +59,10 @@ export class KeywordSyncService {
         }
       }
 
+      console.log('Keyword synchronization completed');
       logger.info('Keyword synchronization completed');
     } catch (error) {
+      console.error('Keyword synchronization failed:', error);
       logger.error('Keyword synchronization failed:', error);
       throw error;
     }
@@ -87,22 +92,36 @@ export class KeywordSyncService {
 
           if (mappings && addInfo) {
             // ranking_field_mapping 구조에 따라 파싱
-            // 예: {"keyword": "search_term"} 형태라면
+            // 예: {"keyword": "10위 이내 키워드"} 형태
             for (const [key, fieldName] of Object.entries(mappings)) {
-              if (key.includes('keyword') && typeof fieldName === 'string' && addInfo[fieldName]) {
-                const keyword = String(addInfo[fieldName]).trim();
-                if (keyword) {
-                  keywords.add(keyword);
+              if (key.includes('keyword') && typeof fieldName === 'string') {
+                // add_field 안에서 찾기
+                if (addInfo.add_field) {
+                  try {
+                    const addField = typeof addInfo.add_field === 'string' 
+                      ? JSON.parse(addInfo.add_field) 
+                      : addInfo.add_field;
+                    
+                    if (addField[fieldName]) {
+                      const keyword = String(addField[fieldName]).trim();
+                      if (keyword) {
+                        keywords.add(keyword);
+                        console.log(`Found keyword from campaign ${campaign.id}: ${keyword}`);
+                      }
+                    }
+                  } catch (err) {
+                    logger.error(`Failed to parse add_field for campaign ${campaign.id}:`, err);
+                  }
+                }
+                
+                // add_info 직접 필드에서도 찾기
+                if (addInfo[fieldName]) {
+                  const keyword = String(addInfo[fieldName]).trim();
+                  if (keyword) {
+                    keywords.add(keyword);
+                  }
                 }
               }
-            }
-
-            // 또는 add_info에 직접 keyword 필드가 있을 수도 있음
-            if (addInfo.keyword) {
-              keywords.add(String(addInfo.keyword).trim());
-            }
-            if (addInfo.search_keyword) {
-              keywords.add(String(addInfo.search_keyword).trim());
             }
           }
         } catch (err) {

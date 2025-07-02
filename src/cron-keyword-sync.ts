@@ -17,6 +17,12 @@ async function runKeywordSync() {
   const isDryRun = process.argv.includes('--dry-run');
   const startTime = Date.now();
   
+  console.log('=== Starting Keyword Sync Cron Job ===');
+  console.log(`Current time: ${new Date().toISOString()}`);
+  if (isDryRun) {
+    console.log('>>> DRY RUN MODE - 실제로 추가되지 않습니다 <<<');
+  }
+  
   logger.info('=== Starting Keyword Sync Cron Job ===');
   logger.info(`Current time: ${new Date().toISOString()}`);
   if (isDryRun) {
