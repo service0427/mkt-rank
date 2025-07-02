@@ -25,6 +25,18 @@ async function testKeywordSync() {
       console.log(`- Campaign ${c.id}: ${c.campaign_name}`);
       console.log(`  ranking_field_mapping: ${JSON.stringify(c.ranking_field_mapping)}`);
       console.log(`  add_info 키: ${Object.keys(c.add_info || {}).join(', ')}`);
+      
+      // add_field 내용 확인
+      if (c.add_info?.add_field) {
+        try {
+          const addField = typeof c.add_info.add_field === 'string' 
+            ? JSON.parse(c.add_info.add_field) 
+            : c.add_info.add_field;
+          console.log(`  add_field 내용: ${JSON.stringify(addField)}`);
+        } catch (e) {
+          console.log(`  add_field 파싱 실패`);
+        }
+      }
     });
     
     // 2. shopping_rankings_current 확인
