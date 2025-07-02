@@ -1,0 +1,125 @@
+===================================================
+HTTPS 설정을 위한 서버 명령어 모음
+===================================================
+
+1. 코드 업데이트
+---------------------------------------------------
+cd /home/techb/mkt-rank
+git pull
+
+
+2. SSL 인증서 생성 (두 가지 방법 중 선택)
+---------------------------------------------------
+
+방법 A: Let's Encrypt 정식 인증서 (권장)
+---------------------------------------------------
+# Certbot 설치 (아직 설치 안 되어 있다면)
+sudo apt update
+sudo apt install certbot
+
+# PM2 일시 중지하고 인증서 발급
+sudo pm2 stop mkt-rank-api
+sudo certbot certonly --standalone -d mkt.techb.kr
+sudo pm2 start mkt-rank-api
+
+# 인증서 위치 확인
+sudo ls -la /etc/letsencrypt/live/mkt.techb.kr/
+
+
+방법 B: 자체 서명 인증서 (테스트용)
+---------------------------------------------------
+cd /home/techb/mkt-rank
+mkdir -p certs
+cd certs
+
+# 자체 서명 인증서 생성
+openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -days 365 -nodes \
+  -subj "/C=KR/ST=Seoul/L=Seoul/O=TechB/CN=mkt.techb.kr"
+
+# 권한 설정
+chmod 600 key.pem cert.pem
+cd ..
+
+
+3. 환경변수 설정
+---------------------------------------------------
+# HTTPS 포트 설정 추가
+echo "API_HTTPS_PORT=3443" >> .env
+
+# 환경변수 확인
+cat .env | grep PORT
+
+
+4. 빌드 및 재시작
+---------------------------------------------------
+# 타입스크립트 빌드
+npm run build
+
+# PM2 재시작
+pm2 restart mkt-rank-api
+
+# 로그 확인
+pm2 logs mkt-rank-api --lines 50
+
+
+5. 방화벽 설정
+---------------------------------------------------
+# HTTPS 포트 열기
+sudo ufw allow 3443/tcp
+
+# 방화벽 상태 확인
+sudo ufw status
+
+
+6. 테스트
+---------------------------------------------------
+# HTTP 테스트 (기존 방식)
+curl -X GET http://localhost:3001/api/health
+
+# HTTPS 테스트 (새로운 방식)
+curl -X POST https://mkt.techb.kr:3443/api/ranking/check \
+  -H "Content-Type: application/json" \
+  -d '{"keyword": "테스트키워드"}'
+
+# 자체 서명 인증서인 경우 -k 옵션 추가
+curl -k -X POST https://mkt.techb.kr:3443/api/ranking/check \
+  -H "Content-Type: application/json" \
+  -d '{"keyword": "테스트키워드"}'
+
+
+7. Let's Encrypt 자동 갱신 설정 (선택사항)
+---------------------------------------------------
+# Cron 작업 추가
+sudo crontab -e
+
+# 다음 줄 추가 (매달 1일 새벽 3시에 갱신 시도)
+0 3 1 * * certbot renew --pre-hook "pm2 stop mkt-rank-api" --post-hook "pm2 start mkt-rank-api"
+
+# Cron 작업 확인
+sudo crontab -l
+
+
+8. 문제 해결
+---------------------------------------------------
+# PM2 프로세스 상태 확인
+pm2 status mkt-rank-api
+
+# 포트 사용 확인
+sudo ss -tlnp | grep -E "(3001|3443)"
+
+# 인증서 파일 확인
+ls -la /etc/letsencrypt/live/mkt.techb.kr/
+# 또는
+ls -la /home/techb/mkt-rank/certs/
+
+# 로그 파일 직접 확인
+tail -f ~/.pm2/logs/mkt-rank-api-out.log
+
+
+===================================================
+참고사항
+===================================================
+- Let's Encrypt 인증서는 90일마다 갱신 필요
+- 자체 서명 인증서는 브라우저에서 경고 표시됨
+- HTTPS 포트는 3443으로 설정됨 (변경 가능)
+- 클라이언트에서는 https://mkt.techb.kr:3443/api/ranking/check 로 호출
