@@ -25,12 +25,13 @@ export class KeywordService {
     this.naverKeywordApiService = new NaverKeywordApiService();
   }
 
-  async getActiveKeywords(): Promise<Keyword[]> {
+  async getActiveKeywords(type: string = 'shopping'): Promise<Keyword[]> {
     try {
       const { data, error } = await supabase
         .from('search_keywords')
         .select('*')
-        .eq('is_active', true);
+        .eq('is_active', true)
+        .eq('type', type);
 
       if (error) {
         throw error;
@@ -43,7 +44,7 @@ export class KeywordService {
       
       return mergedKeywords;
     } catch (error) {
-      logger.error('Failed to fetch active keywords:', error);
+      logger.error(`Failed to fetch active keywords for type ${type}:`, error);
       throw error;
     }
   }
@@ -70,6 +71,29 @@ export class KeywordService {
     }
   }
 
+  async getKeywordByNameAndType(keyword: string, type: string): Promise<Keyword | null> {
+    try {
+      const { data, error } = await supabase
+        .from('search_keywords')
+        .select('*')
+        .eq('keyword', keyword)
+        .eq('type', type)
+        .single();
+
+      if (error) {
+        if (error.code === 'PGRST116') {
+          return null;
+        }
+        throw error;
+      }
+
+      return data;
+    } catch (error) {
+      logger.error(`Failed to fetch keyword ${keyword} with type ${type}:`, error);
+      throw error;
+    }
+  }
+
   async getKeywordById(id: string): Promise<Keyword | null> {
     try {
       const { data, error } = await supabase
@@ -92,7 +116,7 @@ export class KeywordService {
     }
   }
 
-  async createKeyword(keyword: string): Promise<Keyword> {
+  async createKeyword(keyword: string, type: string = 'shopping'): Promise<Keyword> {
     try {
       // 네이버 API로 검색량 가져오기
       const searchVolume = await this.naverKeywordApiService.analyzeKeyword(keyword);
@@ -101,6 +125,7 @@ export class KeywordService {
         .from('search_keywords')
         .insert({ 
           keyword, 
+          type,
           is_active: true,
           pc_count: searchVolume?.pc || 0,
           mobile_count: searchVolume?.mobile || 0,

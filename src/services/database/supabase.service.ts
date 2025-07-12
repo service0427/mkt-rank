@@ -258,12 +258,13 @@ export class SupabaseService {
   /**
    * Get active keywords (with search volume > 0)
    */
-  async getActiveKeywords(limit: number = 100): Promise<SearchKeyword[]> {
+  async getActiveKeywords(limit: number = 100, type: string = 'shopping'): Promise<SearchKeyword[]> {
     try {
       const { data, error } = await this.client
         .from('search_keywords')
         .select('*')
         .gt('total_count', 0)
+        .eq('type', type)
         .order('total_count', { ascending: false })
         .limit(limit);
 
@@ -271,10 +272,10 @@ export class SupabaseService {
         throw new DatabaseError(error.message, 'getActiveKeywords');
       }
 
-      logger.info(`Fetched ${data?.length || 0} active keywords`);
+      logger.info(`Fetched ${data?.length || 0} active keywords for type: ${type}`);
       return data || [];
     } catch (error) {
-      logger.error('Failed to fetch active keywords', { error });
+      logger.error(`Failed to fetch active keywords for type ${type}`, { error });
       throw error;
     }
   }

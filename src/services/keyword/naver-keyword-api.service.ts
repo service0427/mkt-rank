@@ -32,7 +32,10 @@ export class NaverKeywordApiService {
 
   async analyzeKeyword(keyword: string): Promise<KeywordAnalysisResult | null> {
     try {
-      const trimmedKeyword = keyword.trim().replace(/\s/g, '');
+      const trimmedKeyword = keyword
+        .replace(/[\r\n]+/g, '')  // \r, \n 제거
+        .trim()
+        .replace(/\s/g, '');
       
       const timestamp = String(Date.now());
       const signature = this.generateSignature(timestamp, 'GET', '/keywordstool');

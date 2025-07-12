@@ -170,27 +170,6 @@ or
 update OF slot_type on campaigns for EACH row
 execute FUNCTION update_is_guarantee_flag ();
 
-create table public.search_keywords (
-  id uuid not null default gen_random_uuid (),
-  user_id uuid null,
-  keyword character varying(200) not null,
-  pc_count integer not null,
-  mobile_count integer not null,
-  total_count integer not null,
-  pc_ratio numeric(5, 2) not null,
-  mobile_ratio numeric(5, 2) not null,
-  searched_at timestamp with time zone null default CURRENT_TIMESTAMP,
-  is_active boolean null default true,
-  constraint search_keywords_pkey primary key (id),
-  constraint search_keywords_user_id_fkey foreign KEY (user_id) references auth.users (id) on delete CASCADE
-) TABLESPACE pg_default;
-
-create index IF not exists idx_search_keywords_user on public.search_keywords using btree (user_id) TABLESPACE pg_default;
-
-create index IF not exists idx_search_keywords_date on public.search_keywords using btree (searched_at desc) TABLESPACE pg_default;
-
-create index IF not exists idx_search_keywords_keyword on public.search_keywords using btree (keyword) TABLESPACE pg_default;
-
 create table public.shopping_rankings_current (
   keyword_id uuid not null,
   product_id character varying(255) not null,
@@ -211,3 +190,29 @@ create table public.shopping_rankings_current (
 ) TABLESPACE pg_default;
 
 create index IF not exists idx_shopping_rankings_current_keyword_rank on public.shopping_rankings_current using btree (keyword_id, rank) TABLESPACE pg_default;
+
+create table public.search_keywords (
+  id uuid not null default gen_random_uuid (),
+  user_id uuid null,
+  keyword character varying(200) not null,
+  pc_count integer not null,
+  mobile_count integer not null,
+  total_count integer not null,
+  pc_ratio numeric(5, 2) not null,
+  mobile_ratio numeric(5, 2) not null,
+  searched_at timestamp with time zone null default CURRENT_TIMESTAMP,
+  is_active boolean null default true,
+  type character varying(50) null default 'shopping'::character varying,
+  constraint search_keywords_pkey primary key (id),
+  constraint search_keywords_user_id_fkey foreign KEY (user_id) references auth.users (id) on delete CASCADE
+) TABLESPACE pg_default;
+
+create index IF not exists idx_search_keywords_user on public.search_keywords using btree (user_id) TABLESPACE pg_default;
+
+create index IF not exists idx_search_keywords_date on public.search_keywords using btree (searched_at desc) TABLESPACE pg_default;
+
+create index IF not exists idx_search_keywords_keyword on public.search_keywords using btree (keyword) TABLESPACE pg_default;
+
+create index IF not exists idx_search_keywords_type on public.search_keywords using btree (type) TABLESPACE pg_default;
+
+create index IF not exists idx_search_keywords_keyword_type on public.search_keywords using btree (keyword, type) TABLESPACE pg_default;

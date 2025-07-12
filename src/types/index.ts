@@ -65,11 +65,16 @@ export interface SearchResult {
   category2: string;
   category3: string;
   category4: string;
+  metadata?: any; // 쿠팡 등 플랫폼별 추가 데이터
 }
 
 export interface SearchResponse {
+  success: boolean;
   results: SearchResult[];
   totalCount: number;
+  searchTime?: number;
+  metadata?: any;
+  error?: ApiError;
 }
 
 export interface SearchProvider {

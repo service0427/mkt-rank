@@ -82,6 +82,7 @@ export class NaverShoppingProvider extends BaseSearchProvider {
         this.logResponse(keyword, results.length, total);
 
         return {
+          success: true,
           results,
           totalCount: total,
         };
