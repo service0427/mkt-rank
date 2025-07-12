@@ -216,3 +216,124 @@ create index IF not exists idx_search_keywords_keyword on public.search_keywords
 create index IF not exists idx_search_keywords_type on public.search_keywords using btree (type) TABLESPACE pg_default;
 
 create index IF not exists idx_search_keywords_keyword_type on public.search_keywords using btree (keyword, type) TABLESPACE pg_default;
+
+
+create table public.shopping_rankings_current (
+  keyword_id uuid not null,
+  product_id character varying(255) not null,
+  rank integer not null,
+  prev_rank integer null,
+  title text not null,
+  lprice integer not null,
+  image text null,
+  mall_name character varying(255) null,
+  brand character varying(255) null,
+  category1 character varying(255) null,
+  category2 character varying(255) null,
+  link text null,
+  collected_at timestamp with time zone not null,
+  updated_at timestamp with time zone null default CURRENT_TIMESTAMP,
+  constraint shopping_rankings_current_pkey primary key (keyword_id, product_id),
+  constraint shopping_rankings_current_keyword_id_fkey foreign KEY (keyword_id) references search_keywords (id) on delete CASCADE
+) TABLESPACE pg_default;
+
+create index IF not exists idx_shopping_rankings_current_keyword_rank on public.shopping_rankings_current using btree (keyword_id, rank) TABLESPACE pg_default;
+
+
+create table public.shopping_rankings_daily (
+  keyword_id uuid not null,
+  product_id character varying(255) not null,
+  date date not null,
+  rank integer not null,
+  title text not null,
+  lprice integer not null,
+  image text null,
+  mall_name character varying(255) null,
+  brand character varying(255) null,
+  category1 character varying(255) null,
+  category2 character varying(255) null,
+  link text null,
+  last_updated timestamp with time zone null default CURRENT_TIMESTAMP,
+  constraint shopping_rankings_daily_pkey primary key (keyword_id, product_id, date),
+  constraint shopping_rankings_daily_keyword_id_fkey foreign KEY (keyword_id) references search_keywords (id) on delete CASCADE
+) TABLESPACE pg_default;
+
+create index IF not exists idx_shopping_rankings_daily_keyword_date on public.shopping_rankings_daily using btree (keyword_id, date desc) TABLESPACE pg_default;
+
+create table public.shopping_rankings_hourly (
+  keyword_id uuid not null,
+  product_id character varying(255) not null,
+  hour timestamp with time zone not null,
+  rank integer not null,
+  title text not null,
+  lprice integer not null,
+  image text null,
+  mall_name character varying(255) null,
+  brand character varying(255) null,
+  category1 character varying(255) null,
+  category2 character varying(255) null,
+  link text null,
+  collected_at timestamp with time zone null default CURRENT_TIMESTAMP,
+  constraint shopping_rankings_hourly_pkey primary key (keyword_id, product_id, hour),
+  constraint shopping_rankings_hourly_keyword_id_fkey foreign KEY (keyword_id) references search_keywords (id) on delete CASCADE
+) TABLESPACE pg_default;
+
+create index IF not exists idx_shopping_rankings_hourly_keyword_hour on public.shopping_rankings_hourly using btree (keyword_id, hour desc) TABLESPACE pg_default;
+
+create view public.shopping_top_products_weekly_trend as
+select
+  r.keyword_id,
+  r.product_id,
+  r.title,
+  r.brand,
+  r.current_rank,
+  d1.rank as day_1_ago,
+  d2.rank as day_2_ago,
+  d3.rank as day_3_ago,
+  d4.rank as day_4_ago,
+  d5.rank as day_5_ago,
+  d6.rank as day_6_ago,
+  d7.rank as day_7_ago
+from
+  (
+    select distinct
+      on (
+        shopping_rankings_current.keyword_id,
+        shopping_rankings_current.product_id
+      ) shopping_rankings_current.keyword_id,
+      shopping_rankings_current.product_id,
+      shopping_rankings_current.rank as current_rank,
+      shopping_rankings_current.title,
+      shopping_rankings_current.brand
+    from
+      shopping_rankings_current
+    where
+      shopping_rankings_current.rank <= 10
+    order by
+      shopping_rankings_current.keyword_id,
+      shopping_rankings_current.product_id,
+      shopping_rankings_current.rank
+  ) r
+  left join shopping_rankings_daily d1 on r.keyword_id = d1.keyword_id
+  and r.product_id::text = d1.product_id::text
+  and d1.date = (CURRENT_DATE - 1)
+  left join shopping_rankings_daily d2 on r.keyword_id = d2.keyword_id
+  and r.product_id::text = d2.product_id::text
+  and d2.date = (CURRENT_DATE - 2)
+  left join shopping_rankings_daily d3 on r.keyword_id = d3.keyword_id
+  and r.product_id::text = d3.product_id::text
+  and d3.date = (CURRENT_DATE - 3)
+  left join shopping_rankings_daily d4 on r.keyword_id = d4.keyword_id
+  and r.product_id::text = d4.product_id::text
+  and d4.date = (CURRENT_DATE - 4)
+  left join shopping_rankings_daily d5 on r.keyword_id = d5.keyword_id
+  and r.product_id::text = d5.product_id::text
+  and d5.date = (CURRENT_DATE - 5)
+  left join shopping_rankings_daily d6 on r.keyword_id = d6.keyword_id
+  and r.product_id::text = d6.product_id::text
+  and d6.date = (CURRENT_DATE - 6)
+  left join shopping_rankings_daily d7 on r.keyword_id = d7.keyword_id
+  and r.product_id::text = d7.product_id::text
+  and d7.date = (CURRENT_DATE - 7);
+
+  
