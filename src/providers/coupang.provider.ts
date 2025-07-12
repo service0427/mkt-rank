@@ -6,32 +6,29 @@ import { logger } from '../utils/logger';
 
 // 쿠팡 API 응답 타입
 interface CoupangProduct {
-  productId: string;
-  productName: string;
-  productPrice: number;
-  productImage: string;
-  productUrl: string;
-  isRocket: boolean;
-  isRocketFresh?: boolean;
-  isRocketGlobal?: boolean;
-  vendor: string;
-  deliveryInfo: string;
-  ratingScore?: number;
-  ratingCount?: number;
-  discountRate?: number;
-  originalPrice?: number;
-  categoryName?: string;
-  brandName?: string;
-  rank?: number;
+  id: string;
+  name: string;
+  href: string;
+  thumbnail: string;
+  rank: string;
+  realRank: number;
+  page: number;
 }
 
 interface CoupangSearchResponse {
-  rCode: string;
-  rMessage: string;
-  rData: {
-    totalCount: number;
+  success: boolean;
+  requestId: number;
+  data: {
+    keyword: string;
+    count: number;
     products: CoupangProduct[];
+    relatedKeywords?: string[];
+    totalPages: number;
+    searchUrl: string;
+    timestamp: string;
   };
+  agentId: string;
+  duration: number;
 }
 
 export class CoupangProvider extends BaseSearchProvider {
@@ -64,7 +61,7 @@ export class CoupangProvider extends BaseSearchProvider {
    */
   async search(keyword: string, page: number = 1): Promise<SearchResponse> {
     const startTime = Date.now();
-    const itemsPerPage = 100; // 쿠팡은 최대 100개까지 가능
+    const itemsPerPage = 72; // 쿠팡 API 제한
 
     try {
       logger.info(`[${this.providerName}] Searching for keyword: ${keyword}, page: ${page}`);
@@ -77,38 +74,32 @@ export class CoupangProvider extends BaseSearchProvider {
       const searchTime = Date.now() - startTime;
 
       // API 응답 검증
-      if (response.data.rCode !== '0000') {
-        throw new Error(`Coupang API Error: ${response.data.rMessage}`);
+      if (!response.data.success) {
+        throw new Error('Coupang API request failed');
       }
 
-      const { totalCount, products } = response.data.rData;
+      const { products } = response.data.data;
+      const totalCount = products.length;
 
       // 쿠팡 응답을 표준 포맷으로 변환
-      const results: SearchResult[] = products.map((product, index) => ({
-        productId: product.productId,
-        title: this.cleanTitle(product.productName),
-        link: product.productUrl,
-        image: product.productImage,
-        lprice: product.productPrice,
-        hprice: product.originalPrice || product.productPrice,
-        mallName: product.vendor,
-        productType: product.isRocket ? '3' : '1', // 3: 로켓배송, 1: 일반
-        brand: product.brandName || '',
-        maker: '', // 쿠팡은 제조사 정보 없음
-        category1: product.categoryName || '',
+      const results: SearchResult[] = products.map((product) => ({
+        productId: product.id,
+        title: this.cleanTitle(product.name),
+        link: product.href,
+        image: product.thumbnail,
+        lprice: 0, // 가격 정보가 없음 - 추후 스크래핑 필요
+        hprice: 0,
+        mallName: '쿠팡',
+        productType: '1', // 기본값
+        brand: '',
+        maker: '',
+        category1: '',
         category2: '',
         category3: '',
         category4: '',
         // 쿠팡 특화 필드를 metadata에 저장
         metadata: {
-          isRocket: product.isRocket,
-          isRocketFresh: product.isRocketFresh,
-          isRocketGlobal: product.isRocketGlobal,
-          deliveryInfo: product.deliveryInfo,
-          ratingScore: product.ratingScore,
-          ratingCount: product.ratingCount,
-          discountRate: product.discountRate,
-          rank: (page - 1) * itemsPerPage + index + 1
+          rank: product.realRank
         }
       }));
 
@@ -226,7 +217,7 @@ export class CoupangProvider extends BaseSearchProvider {
     try {
       const response = await this.axiosInstance.post<CoupangSearchResponse>('', {
         keyword: keyword,
-        limit: 100
+        limit: 72
       });
 
       // 나머지는 일반 search와 동일하게 처리
@@ -244,37 +235,31 @@ export class CoupangProvider extends BaseSearchProvider {
     _keyword: string, 
     page: number
   ): SearchResponse {
-    if (data.rCode !== '0000') {
-      throw new Error(`Coupang API Error: ${data.rMessage}`);
+    if (!data.success) {
+      throw new Error('Coupang API request failed');
     }
 
-    const { totalCount, products } = data.rData;
-    const itemsPerPage = 100;
+    const { products } = data.data;
+    const totalCount = products.length;
+    const itemsPerPage = 72;
 
-    const results: SearchResult[] = products.map((product, index) => ({
-      productId: product.productId,
-      title: this.cleanTitle(product.productName),
-      link: product.productUrl,
-      image: product.productImage,
-      lprice: product.productPrice,
-      hprice: product.originalPrice || product.productPrice,
-      mallName: product.vendor,
-      productType: product.isRocket ? '3' : '1',
-      brand: product.brandName || '',
+    const results: SearchResult[] = products.map((product) => ({
+      productId: product.id,
+      title: this.cleanTitle(product.name),
+      link: product.href,
+      image: product.thumbnail,
+      lprice: 0,
+      hprice: 0,
+      mallName: '쿠팡',
+      productType: '1',
+      brand: '',
       maker: '',
-      category1: product.categoryName || '',
+      category1: '',
       category2: '',
       category3: '',
       category4: '',
       metadata: {
-        isRocket: product.isRocket,
-        isRocketFresh: product.isRocketFresh,
-        isRocketGlobal: product.isRocketGlobal,
-        deliveryInfo: product.deliveryInfo,
-        ratingScore: product.ratingScore,
-        ratingCount: product.ratingCount,
-        discountRate: product.discountRate,
-        rank: (page - 1) * itemsPerPage + index + 1
+        rank: product.realRank
       }
     }));
 
