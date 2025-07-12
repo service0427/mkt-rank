@@ -54,7 +54,7 @@ export class CoupangProvider extends BaseSearchProvider {
       timeout: 30000,
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${this.apiKey}`
+        'X-API-Key': this.apiKey
       }
     });
   }
@@ -69,11 +69,9 @@ export class CoupangProvider extends BaseSearchProvider {
     try {
       logger.info(`[${this.providerName}] Searching for keyword: ${keyword}, page: ${page}`);
 
-      const response = await this.axiosInstance.post<CoupangSearchResponse>('/search', {
+      const response = await this.axiosInstance.post<CoupangSearchResponse>('', {
         keyword: keyword,
-        limit: itemsPerPage,
-        page: page,
-        sorter: 'scoreDesc' // 쿠팡 랭킹순
+        limit: itemsPerPage
       });
 
       const searchTime = Date.now() - startTime;
@@ -226,12 +224,9 @@ export class CoupangProvider extends BaseSearchProvider {
    */
   async searchByCategory(keyword: string, categoryId: string, page: number = 1): Promise<SearchResponse> {
     try {
-      const response = await this.axiosInstance.post<CoupangSearchResponse>('/search', {
+      const response = await this.axiosInstance.post<CoupangSearchResponse>('', {
         keyword: keyword,
-        categoryId: categoryId,
-        limit: 100,
-        page: page,
-        sorter: 'scoreDesc'
+        limit: 100
       });
 
       // 나머지는 일반 search와 동일하게 처리
