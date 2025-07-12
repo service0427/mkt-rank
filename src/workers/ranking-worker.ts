@@ -1,6 +1,7 @@
 import { Job } from 'bull';
 import { rankingQueue, RankingJobData } from '../queues/ranking-queue';
 import { RankingService } from '../services/ranking/ranking.service';
+import { CoupangRankingService } from '../services/ranking/coupang-ranking.service';
 import { KeywordService } from '../services/keyword/keyword.service';
 import { logger } from '../utils/logger';
 import { FileLogger } from '../utils/file-logger';
@@ -9,12 +10,14 @@ import '../queues/queue-monitor';
 
 export class RankingWorker {
   private rankingService: RankingService;
+  private coupangRankingService: CoupangRankingService;
   private keywordService: KeywordService;
   private fileLogger: FileLogger;
   private concurrency: number;
 
   constructor() {
     this.rankingService = new RankingService();
+    this.coupangRankingService = new CoupangRankingService();
     this.keywordService = new KeywordService();
     this.fileLogger = new FileLogger();
     this.concurrency = parseInt(process.env.QUEUE_CONCURRENCY || '3');
@@ -25,17 +28,17 @@ export class RankingWorker {
     
 
     rankingQueue.process(this.concurrency, async (job: Job<RankingJobData>) => {
-      const { keyword } = job.data;
+      const { keyword, type = 'shopping' } = job.data;
       const startTime = Date.now();
 
       try {
-        logger.info(`Processing keyword: ${keyword} (Job ID: ${job.id})`);
+        logger.info(`Processing ${type} keyword: ${keyword} (Job ID: ${job.id})`);
         
         await job.progress(10);
         
-        const keywordData = await this.keywordService.getKeywordByName(keyword);
+        const keywordData = await this.keywordService.getKeywordByNameAndType(keyword, type);
         if (!keywordData) {
-          throw new Error(`Keyword not found: ${keyword}`);
+          throw new Error(`Keyword not found: ${keyword} (type: ${type})`);
         }
 
         await job.progress(20);
@@ -51,14 +54,20 @@ export class RankingWorker {
           pc_ratio: 0,
           mobile_ratio: 0,
           searched_at: keywordData.created_at,
+          type: type
         };
         
-        await this.rankingService.collectKeywordRankings(searchKeyword);
+        // 타입에 따라 다른 서비스 호출
+        if (type === 'cp') {
+          await this.coupangRankingService.collectKeywordRankings(searchKeyword);
+        } else {
+          await this.rankingService.collectKeywordRankings(searchKeyword);
+        }
 
         await job.progress(100);
 
         const duration = Date.now() - startTime;
-        logger.info(`Completed keyword: ${keyword} in ${duration}ms`);
+        logger.info(`Completed ${type} keyword: ${keyword} in ${duration}ms`);
         this.fileLogger.logKeywordProcessed(keyword, true, duration);
 
         return {

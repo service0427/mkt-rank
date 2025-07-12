@@ -6,6 +6,7 @@ export interface RankingJobData {
   priority: number;
   retryCount?: number;
   startedAt?: Date;
+  type?: string; // 'shopping' | 'cp'
 }
 
 export const rankingQueue = new Bull<RankingJobData>('ranking-collection', {
@@ -34,16 +35,18 @@ rankingQueue.on('failed', (job, error) => {
 });
 
 rankingQueue.on('completed', (job) => {
-  logger.info(`Job ${job.id} completed for keyword ${job.data.keyword}`);
+  logger.info(`Job ${job.id} completed for ${job.data.type || 'shopping'} keyword ${job.data.keyword}`);
 });
 
-export const addKeywordToQueue = async (keyword: string, priority: number = 0) => {
+export const addKeywordToQueue = async (keyword: string, priority: number = 0, type: string = 'shopping') => {
   try {
     const existingJobs = await rankingQueue.getJobs(['waiting', 'active']);
-    const isDuplicate = existingJobs.some(job => job.data.keyword === keyword);
+    const isDuplicate = existingJobs.some(job => 
+      job.data.keyword === keyword && job.data.type === type
+    );
     
     if (isDuplicate) {
-      logger.warn(`Keyword ${keyword} is already in queue, skipping`);
+      logger.warn(`${type} keyword ${keyword} is already in queue, skipping`);
       return null;
     }
 
@@ -52,6 +55,7 @@ export const addKeywordToQueue = async (keyword: string, priority: number = 0) =
         keyword,
         priority,
         startedAt: new Date(),
+        type,
       },
       {
         priority,
@@ -59,7 +63,7 @@ export const addKeywordToQueue = async (keyword: string, priority: number = 0) =
       }
     );
 
-    logger.info(`Added keyword ${keyword} to queue with priority ${priority}`);
+    logger.info(`Added ${type} keyword ${keyword} to queue with priority ${priority}`);
     return job;
   } catch (error) {
     logger.error(`Failed to add keyword ${keyword} to queue:`, error);
