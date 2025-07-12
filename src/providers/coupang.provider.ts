@@ -222,7 +222,7 @@ export class CoupangProvider extends BaseSearchProvider {
   /**
    * 쿠팡 특화 메서드 - 카테고리별 검색
    */
-  async searchByCategory(keyword: string, categoryId: string, page: number = 1): Promise<SearchResponse> {
+  async searchByCategory(keyword: string, _categoryId: string, page: number = 1): Promise<SearchResponse> {
     try {
       const response = await this.axiosInstance.post<CoupangSearchResponse>('', {
         keyword: keyword,
