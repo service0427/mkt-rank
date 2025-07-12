@@ -48,7 +48,7 @@ export class CoupangProvider extends BaseSearchProvider {
 
     this.axiosInstance = axios.create({
       baseURL: this.apiUrl,
-      timeout: 30000,
+      timeout: 60000, // 60초로 증가
       headers: {
         'Content-Type': 'application/json',
         'X-API-Key': this.apiKey

@@ -52,51 +52,41 @@ export class CoupangInstantRankingService {
       logger.info(`Creating new Coupang keyword: ${validatedKeyword}`);
       const newKeyword = await this.keywordService.createKeyword(validatedKeyword, 'cp');
       
-      // 3. 즉시 순위 수집
-      try {
-        logger.info(`Collecting Coupang rankings for new keyword: ${validatedKeyword}`);
-        // SearchKeyword 타입으로 변환
-        const searchKeyword = {
-          id: newKeyword.id,
-          user_id: null,
-          keyword: newKeyword.keyword,
-          pc_count: 0,
-          mobile_count: 0,
-          total_count: 0,
-          pc_ratio: 0,
-          mobile_ratio: 0,
-          searched_at: newKeyword.created_at,
-          type: 'cp'
-        };
-        await this.rankingService.collectKeywordRankings(searchKeyword);
-        
-        // 4. 즉시 Supabase 동기화 (current, hourly)
-        logger.info(`Syncing Coupang rankings to Supabase for keyword: ${validatedKeyword}`);
-        await this.syncService.syncCurrentRankings([newKeyword.id]);
-        await this.syncService.syncHourlySnapshots([newKeyword.id]);
-        
-        // 로켓배송 상품 수 계산
-        const rocketCount = await this.getRocketDeliveryCount(newKeyword.id);
-        
-        return {
-          keyword: validatedKeyword,
-          keywordId: newKeyword.id,
-          isNew: true,
-          message: '쿠팡 키워드 추가, 순위 수집 및 동기화 완료',
-          rocketCount
-        };
-      } catch (collectError) {
-        logger.error(`Failed to collect Coupang rankings for ${validatedKeyword}:`, collectError);
-        
-        // 순위 수집 실패해도 키워드는 추가됨
-        return {
-          keyword: validatedKeyword,
-          keywordId: newKeyword.id,
-          isNew: true,
-          message: '쿠팡 키워드 추가됨 (순위 수집은 다음 스케줄에 진행)',
-          error: '순위 수집 중 오류 발생'
-        };
-      }
+      // 3. 백그라운드에서 순위 수집 (비동기 처리)
+      logger.info(`Scheduling Coupang rankings collection for new keyword: ${validatedKeyword}`);
+      
+      // 비동기로 처리하여 API 응답을 빠르게 반환
+      setImmediate(async () => {
+        try {
+          const searchKeyword = {
+            id: newKeyword.id,
+            user_id: null,
+            keyword: newKeyword.keyword,
+            pc_count: 0,
+            mobile_count: 0,
+            total_count: 0,
+            pc_ratio: 0,
+            mobile_ratio: 0,
+            searched_at: newKeyword.created_at,
+            type: 'cp'
+          };
+          await this.rankingService.collectKeywordRankings(searchKeyword);
+          
+          // Supabase 동기화
+          logger.info(`Syncing Coupang rankings to Supabase for keyword: ${validatedKeyword}`);
+          await this.syncService.syncCurrentRankings([newKeyword.id]);
+          await this.syncService.syncHourlySnapshots([newKeyword.id]);
+        } catch (error) {
+          logger.error(`Background collection failed for ${validatedKeyword}:`, error);
+        }
+      });
+      
+      return {
+        keyword: validatedKeyword,
+        keywordId: newKeyword.id,
+        isNew: true,
+        message: '쿠팡 키워드 추가됨 (순위 수집은 백그라운드에서 진행 중)'
+      };
       
     } catch (error) {
       logger.error(`Failed to check Coupang keyword ${keyword}:`, error);
@@ -199,31 +189,6 @@ export class CoupangInstantRankingService {
     }
   }
 
-  /**
-   * 로켓배송 상품 수 계산
-   */
-  private async getRocketDeliveryCount(keywordId: string): Promise<number> {
-    try {
-      const localDb = new LocalPostgresService();
-      const query = `
-        SELECT COUNT(DISTINCT product_id) as rocket_count
-        FROM cp_rankings
-        WHERE keyword_id = $1
-          AND is_rocket = true
-          AND collected_at = (
-            SELECT MAX(collected_at) 
-            FROM cp_rankings 
-            WHERE keyword_id = $1
-          )
-      `;
-      
-      const result = await localDb.pool.query(query, [keywordId]);
-      return parseInt(result.rows[0].rocket_count) || 0;
-    } catch (error) {
-      logger.error('Failed to get rocket delivery count:', error);
-      return 0;
-    }
-  }
 
   /**
    * 키워드 검증
