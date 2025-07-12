@@ -290,11 +290,13 @@ export class CoupangRankingService {
 
       const query = `
         INSERT INTO cp_rankings (
-          keyword_id, keyword_name, product_id, rank, title, link, image,
-          lprice, hprice, mall_name, product_type, brand, maker,
-          category1, category2, category3, category4,
-          is_rocket, is_rocket_fresh, is_rocket_global, delivery_type,
-          rating, review_count, discount_rate, collected_at
+          keyword_id, product_id, rank, title, link, image,
+          lprice, mall_name, brand,
+          category1, category2, 
+          seller_name, delivery_type,
+          is_rocket, is_rocket_fresh, is_rocket_global,
+          rating, review_count, is_wow_deal, discount_rate, original_price,
+          card_discount, collected_at
         ) VALUES ${placeholders.join(', ')}
       `;
 
