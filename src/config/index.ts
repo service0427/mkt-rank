@@ -33,6 +33,10 @@ export const config = {
     apiKeys: parseNaverApiKeys(),
     apiUrl: 'https://openapi.naver.com/v1/search/shop.json',
   },
+  coupang: {
+    apiUrl: process.env.COUPANG_API_URL || '',
+    apiKey: process.env.COUPANG_API_KEY || '',
+  },
   scheduler: {
     cronExpression: process.env.SCHEDULE_INTERVAL || '0 * * * *',
   },

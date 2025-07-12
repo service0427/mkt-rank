@@ -130,8 +130,10 @@ export class InstantRankingService {
    * 키워드 검증
    */
   private validateKeyword(keyword: string): string {
-    // 앞뒤 공백 제거
-    const trimmed = keyword.trim();
+    // 모든 종류의 줄바꿈 문자 제거 후 앞뒤 공백 제거
+    const trimmed = keyword
+      .replace(/[\r\n]+/g, '')  // \r, \n 제거
+      .trim();
     
     // 길이 검증 (2자 이상, 50자 이하)
     if (trimmed.length < 2) {

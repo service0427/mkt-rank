@@ -10,6 +10,7 @@ import { config, validateConfig } from '../config';
 import { logger } from '../utils/logger';
 import monitorRoutes from '../routes/monitor.routes';
 import rankingRoutes from '../routes/ranking.routes';
+import coupangRoutes from '../routes/coupang.routes';
 
 const app = express();
 const HTTP_PORT = process.env.API_PORT || 3001;
@@ -24,6 +25,9 @@ app.use('/api/monitor', monitorRoutes);
 
 // Ranking routes
 app.use('/api/ranking', rankingRoutes);
+
+// Coupang routes
+app.use('/api/coupang', coupangRoutes);
 
 // Serve monitoring dashboard
 app.get('/monitor', (_req, res) => {
@@ -207,6 +211,10 @@ function logEndpoints() {
   logger.info('  GET  /api/search/full?keyword=검색어&pages=5');
   logger.info('  POST /api/ranking/check');
   logger.info('  POST /api/ranking/check-multiple');
+  logger.info('  POST /api/coupang/check');
+  logger.info('  POST /api/coupang/check-multiple');
+  logger.info('  POST /api/coupang/check-rocket');
+  logger.info('  GET  /api/coupang/status/:keyword');
   logger.info('');
   logger.info('=== 새로운 키워드 순위 체크 API 테스트 방법 ===');
   logger.info('');
@@ -223,6 +231,23 @@ function logEndpoints() {
   logger.info('응답 예시:');
   logger.info('  - isNew: true  → 새로 추가된 키워드 (순위 수집 완료)');
   logger.info('  - isNew: false → 이미 존재하는 키워드 (건너뜀)');
+  logger.info('');
+  logger.info('=== 쿠팡 키워드 순위 체크 API 테스트 방법 ===');
+  logger.info('');
+  logger.info('1. 쿠팡 단일 키워드 체크:');
+  logger.info(`   curl -X POST https://mkt.techb.kr:${HTTPS_PORT}/api/coupang/check \\`);
+  logger.info('     -H "Content-Type: application/json" \\');
+  logger.info('     -d \'{"keyword": "노트북"}\'');
+  logger.info('');
+  logger.info('2. 쿠팡 다중 키워드 체크:');
+  logger.info(`   curl -X POST https://mkt.techb.kr:${HTTPS_PORT}/api/coupang/check-multiple \\`);
+  logger.info('     -H "Content-Type: application/json" \\');
+  logger.info('     -d \'{"keywords": ["노트북", "무선마우스", "키보드"]}\'');
+  logger.info('');
+  logger.info('3. 로켓배송 전용 검색:');
+  logger.info(`   curl -X POST https://mkt.techb.kr:${HTTPS_PORT}/api/coupang/check-rocket \\`);
+  logger.info('     -H "Content-Type: application/json" \\');
+  logger.info('     -d \'{"keyword": "삼성 노트북"}\'');
 }
 
 // If running directly
