@@ -96,8 +96,20 @@ export class RankingQueueScheduler {
         return;
       }
 
-      const keywords = await this.keywordService.getActiveKeywords();
-      logger.info(`Found ${keywords.length} active keywords to enqueue`);
+      // 쇼핑 키워드 가져오기
+      const shoppingKeywords = await this.keywordService.getActiveKeywords('shopping');
+      logger.info(`Found ${shoppingKeywords.length} active shopping keywords to enqueue`);
+      
+      // 쿠팡 키워드 가져오기 (type='cp')
+      const coupangKeywords = await this.keywordService.getActiveKeywords('cp');
+      logger.info(`Found ${coupangKeywords.length} active coupang keywords to enqueue`);
+      
+      // 전체 키워드 합치기 (각 키워드에 type 추가)
+      const keywords = [
+        ...shoppingKeywords.map(k => ({...k, type: 'shopping'})),
+        ...coupangKeywords.map(k => ({...k, type: 'cp'}))
+      ];
+      logger.info(`Total ${keywords.length} keywords to enqueue (shopping: ${shoppingKeywords.length}, coupang: ${coupangKeywords.length})`);
       
       // Queue에 추가하기 전에 전체 수집 시작 로그
       if (keywords.length > 0) {
@@ -108,7 +120,7 @@ export class RankingQueueScheduler {
       let addedCount = 0;
       for (const keyword of keywords) {
         const priority = keyword.priority || 0;
-        const job = await addKeywordToQueue(keyword.keyword, priority);
+        const job = await addKeywordToQueue(keyword.keyword, priority, keyword.type);
         if (job) {
           addedCount++;
         }
