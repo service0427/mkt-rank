@@ -25,13 +25,17 @@ interface CoupangRanking {
   category3: string;
   category4: string;
   // 쿠팡 특화 필드
+  seller_name?: string;
   is_rocket: boolean;
   is_rocket_fresh?: boolean;
   is_rocket_global?: boolean;
   delivery_type?: string;
   rating?: number;
   review_count?: number;
+  is_wow_deal?: boolean;
   discount_rate?: number;
+  original_price?: number;
+  card_discount?: number;
   collected_at: Date;
 }
 
