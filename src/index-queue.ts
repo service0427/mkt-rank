@@ -71,7 +71,7 @@ const main = async () => {
       }
     });
     
-    const PORT = 3003;
+    const PORT = process.env.QUEUE_CONTROL_PORT || 3005;
     app.listen(PORT, () => {
       logger.info(`Queue control API running on port ${PORT}`);
     });
