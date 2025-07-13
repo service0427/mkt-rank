@@ -1,7 +1,7 @@
 import { logger } from './utils/logger';
 import { RankingQueueScheduler } from './schedulers/ranking-queue.scheduler';
 import { config } from './config';
-import { startApiServer } from './api/server';
+// import { startApiServer } from './api/server';
 
 // Create scheduler instance
 const scheduler = new RankingQueueScheduler();
@@ -50,7 +50,8 @@ const main = async () => {
     });
 
     // Start the API server for monitoring
-    startApiServer();
+    // NOTE: API server is already running in mkt-rank-api process
+    // startApiServer();
 
     // Start the queue scheduler
     await scheduler.start();
@@ -61,7 +62,7 @@ const main = async () => {
 
     // Keep the process running
     logger.info('MKT-RANK Queue application is running');
-    logger.info('Monitor dashboard available at: http://localhost:3001/monitor');
+    logger.info('Queue scheduler started. Monitor dashboard available at mkt-rank-api process');
     
   } catch (error) {
     logger.error('Failed to start application', { error });
