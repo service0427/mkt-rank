@@ -1,7 +1,6 @@
 import { logger } from './utils/logger';
 import { RankingQueueScheduler } from './schedulers/ranking-queue.scheduler';
 import { config } from './config';
-// import { startApiServer } from './api/server';
 
 // Create scheduler instance
 const scheduler = new RankingQueueScheduler();
@@ -49,9 +48,6 @@ const main = async () => {
       queueConcurrency: process.env.QUEUE_CONCURRENCY || '3',
     });
 
-    // Start the API server for monitoring
-    // NOTE: API server is already running in mkt-rank-api process
-    // startApiServer();
 
     // Start the queue scheduler
     await scheduler.start();

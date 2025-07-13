@@ -173,23 +173,42 @@ router.post('/trigger-collection', async (_req, res) => {
   try {
     logger.info('Manual collection triggered via API');
     
-    // Queue 스케줄러 인스턴스에 접근하기 위해 global 사용
-    const scheduler = (global as any).rankingQueueScheduler;
+    // 직접 키워드를 가져와서 큐에 추가
+    const { KeywordService } = await import('../services/keyword/keyword.service');
+    const { addKeywordToQueue } = await import('../queues/ranking-queue');
     
-    if (!scheduler) {
-      res.status(500).json({
-        success: false,
-        error: 'Scheduler not initialized',
-      });
-      return;
+    const keywordService = new KeywordService();
+    
+    // 쇼핑 키워드 가져오기
+    const shoppingKeywords = await keywordService.getActiveKeywords('shopping');
+    logger.info(`Found ${shoppingKeywords.length} active shopping keywords`);
+    
+    // 쿠팡 키워드 가져오기
+    const coupangKeywords = await keywordService.getActiveKeywords('cp');
+    logger.info(`Found ${coupangKeywords.length} active coupang keywords`);
+    
+    // 큐에 추가
+    let addedCount = 0;
+    
+    for (const keyword of shoppingKeywords) {
+      const job = await addKeywordToQueue(keyword.keyword, keyword.priority || 0, 'shopping');
+      if (job) addedCount++;
     }
     
-    // 수동으로 키워드 큐에 추가
-    await scheduler.runManual();
+    for (const keyword of coupangKeywords) {
+      const job = await addKeywordToQueue(keyword.keyword, keyword.priority || 0, 'cp');
+      if (job) addedCount++;
+    }
     
     res.json({
       success: true,
       message: 'Collection triggered successfully',
+      data: {
+        totalKeywords: shoppingKeywords.length + coupangKeywords.length,
+        addedToQueue: addedCount,
+        shopping: shoppingKeywords.length,
+        coupang: coupangKeywords.length
+      },
       timestamp: new Date(),
     });
   } catch (error) {
