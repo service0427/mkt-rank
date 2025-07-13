@@ -6,18 +6,22 @@ import { queueMonitor } from '../queues/queue-monitor';
 import { logger } from '../utils/logger';
 import { FileLogger } from '../utils/file-logger';
 import { config } from '../config';
+import { DatabaseCleanupService } from '../services/database/cleanup.service';
 
 export class RankingQueueScheduler {
   private keywordService: KeywordService;
   private rankingWorker: RankingWorker;
   private fileLogger: FileLogger;
+  private cleanupService: DatabaseCleanupService;
   private cronJob: cron.ScheduledTask | null = null;
+  private cleanupCronJob: cron.ScheduledTask | null = null;
   private isRunning = false;
 
   constructor() {
     this.keywordService = new KeywordService();
     this.rankingWorker = new RankingWorker();
     this.fileLogger = new FileLogger();
+    this.cleanupService = new DatabaseCleanupService();
   }
 
   async start(): Promise<void> {
@@ -47,6 +51,25 @@ export class RankingQueueScheduler {
 
     logger.info('Ranking queue scheduler started successfully');
 
+    // DB 정리 스케줄러 추가 (매일 새벽 3시)
+    this.cleanupCronJob = cron.schedule(
+      '0 3 * * *',
+      async () => {
+        logger.info('Running daily database cleanup');
+        try {
+          await this.cleanupService.runDailyCleanup();
+        } catch (error) {
+          logger.error('Database cleanup failed:', error);
+        }
+      },
+      {
+        scheduled: true,
+        timezone: 'Asia/Seoul',
+      }
+    );
+
+    logger.info('Database cleanup scheduler started (daily at 3 AM)');
+
     if (config.environment === 'development') {
       logger.info('Running initial queue population in development mode');
       this.enqueueKeywords().catch((error) => {
@@ -63,6 +86,11 @@ export class RankingQueueScheduler {
 
     this.cronJob.stop();
     this.cronJob = null;
+    
+    if (this.cleanupCronJob) {
+      this.cleanupCronJob.stop();
+      this.cleanupCronJob = null;
+    }
     
     await this.rankingWorker.stop();
     

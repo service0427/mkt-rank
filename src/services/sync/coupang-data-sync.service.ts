@@ -215,7 +215,10 @@ export class CoupangDataSyncService {
 
       const { error: insertError } = await this.supabase.client
         .from('cp_rankings_current')
-        .insert(dataToInsert);
+        .upsert(dataToInsert, {
+          onConflict: 'keyword_id,product_id',
+          ignoreDuplicates: false
+        });
 
       if (insertError) {
         throw insertError;
@@ -251,31 +254,48 @@ export class CoupangDataSyncService {
   }
 
   /**
-   * 로컬 DB에서 시간별 집계 데이터 가져오기
+   * 로컬 DB에서 시간별 데이터 가져오기 (집계하지 않고 원본 데이터)
    */
   private async getHourlyCoupangAggregates(keywordIds?: string[]): Promise<any[]> {
     const currentHour = new Date();
     currentHour.setMinutes(0, 0, 0);
 
     let query = `
-      SELECT 
-        keyword_id,
-        product_id,
-        date_trunc('hour', collected_at) as hour,
-        MIN(rank) as best_rank,
-        MAX(rank) as worst_rank,
-        AVG(rank)::numeric(10,2) as avg_rank,
-        COUNT(*) as count,
-        MIN(lprice) as min_price,
-        MAX(lprice) as max_price,
-        AVG(lprice)::numeric(10,2) as avg_price,
-        MAX(CASE WHEN is_rocket THEN 1 ELSE 0 END)::boolean as is_rocket,
-        AVG(rating)::numeric(3,2) as avg_rating,
-        AVG(review_count)::integer as avg_review_count
-      FROM cp_rankings
-      WHERE date_trunc('hour', collected_at) = $1
-        ${keywordIds ? 'AND keyword_id = ANY($2)' : ''}
-      GROUP BY keyword_id, product_id, hour
+      WITH latest_hour_data AS (
+        SELECT DISTINCT ON (keyword_id, product_id)
+          keyword_id,
+          product_id,
+          rank,
+          title,
+          lprice,
+          hprice,
+          image,
+          mall_name,
+          brand,
+          category1,
+          category2,
+          category3,
+          category4,
+          link,
+          seller_name,
+          is_rocket,
+          is_rocket_fresh,
+          is_rocket_global,
+          delivery_type,
+          rating,
+          review_count,
+          is_wow_deal,
+          discount_rate,
+          original_price,
+          card_discount,
+          date_trunc('hour', collected_at) as hour,
+          collected_at
+        FROM cp_rankings
+        WHERE date_trunc('hour', collected_at) = $1
+          ${keywordIds ? 'AND keyword_id = ANY($2)' : ''}
+        ORDER BY keyword_id, product_id, collected_at DESC
+      )
+      SELECT * FROM latest_hour_data
     `;
 
     const params = keywordIds ? [currentHour, keywordIds] : [currentHour];
