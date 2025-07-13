@@ -98,22 +98,8 @@ export class CoupangRankingService {
         errorCount,
       });
 
-      // Supabase로 동기화
-      const keywordIds = keywords.map(k => k.id);
-      
-      // 현재 랭킹 동기화
-      await this.dataSyncService.syncCurrentRankings(keywordIds);
-      
-      // 시간별 스냅샷 동기화 (매시 정각)
-      const now = new Date();
-      if (now.getMinutes() === 0) {
-        await this.dataSyncService.syncHourlySnapshots(keywordIds);
-      }
-      
-      // 일별 스냅샷 동기화 (자정)
-      if (now.getHours() === 0 && now.getMinutes() === 0) {
-        await this.dataSyncService.syncDailySnapshots(keywordIds);
-      }
+      // Supabase로 동기화 - queue-monitor에서 처리하므로 여기서는 실행하지 않음
+      logger.info('Individual keyword collection completed. Sync will be handled by queue-monitor.');
     } catch (error) {
       logger.error('Coupang ranking collection process failed', { error });
       throw error;
@@ -184,7 +170,7 @@ export class CoupangRankingService {
       // 로컬 PostgreSQL에 먼저 저장
       await this.saveCoupangRankings(rankings);
       
-      // 전체 동기화 실행
+      // 전체 동기화 실행 (현재 랭킹만 동기화, 시간별/일별은 queue-monitor에서 처리)
       await this.dataSyncService.runFullSync([keyword.id]);
       
       // Supabase에 마지막 수집 시간 업데이트

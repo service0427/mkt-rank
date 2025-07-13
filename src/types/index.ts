@@ -3,6 +3,7 @@ export interface SearchKeyword {
   id: string;
   user_id: string | null;
   keyword: string;
+  type?: string; // 'shopping' | 'cp'
   pc_count: number;
   mobile_count: number;
   total_count: number;

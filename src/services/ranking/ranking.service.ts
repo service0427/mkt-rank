@@ -67,22 +67,8 @@ export class RankingService {
         errorCount,
       });
 
-      // Run sync to Supabase
-      const keywordIds = keywords.map(k => k.id);
-      
-      // Sync current rankings to Supabase
-      await this.dataSyncService.syncCurrentRankings(keywordIds);
-      
-      // Sync hourly snapshots every hour
-      const now = new Date();
-      if (now.getMinutes() === 0) {
-        await this.dataSyncService.syncHourlySnapshots(keywordIds);
-      }
-      
-      // Sync daily snapshots at midnight
-      if (now.getHours() === 0 && now.getMinutes() === 0) {
-        await this.dataSyncService.syncDailySnapshots(keywordIds);
-      }
+      // Sync to Supabase - handled by queue-monitor after all keywords collected
+      logger.info('Individual keyword collection completed. Sync will be handled by queue-monitor.');
     } catch (error) {
       logger.error('Ranking collection process failed', { error });
       throw error;
