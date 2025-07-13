@@ -116,7 +116,35 @@ export class CoupangDataSyncService {
       // Supabase에 일괄 삽입
       const { error } = await this.supabase.client
         .from('cp_rankings_hourly')
-        .upsert(hourlyData, {
+        .upsert(hourlyData.map(data => ({
+          keyword_id: data.keyword_id,
+          product_id: data.product_id,
+          hour: data.hour,
+          rank: data.rank,
+          title: data.title,
+          lprice: data.lprice,
+          hprice: data.hprice,
+          image: data.image,
+          mall_name: data.mall_name,
+          brand: data.brand,
+          category1: data.category1,
+          category2: data.category2,
+          category3: data.category3,
+          category4: data.category4,
+          link: data.link,
+          seller_name: data.seller_name,
+          is_rocket: data.is_rocket,
+          is_rocket_fresh: data.is_rocket_fresh,
+          is_rocket_global: data.is_rocket_global,
+          delivery_type: data.delivery_type,
+          rating: data.rating,
+          review_count: data.review_count,
+          is_wow_deal: data.is_wow_deal,
+          discount_rate: data.discount_rate,
+          original_price: data.original_price,
+          card_discount: data.card_discount,
+          collected_at: data.collected_at
+        })), {
           onConflict: 'keyword_id,product_id,hour',
           ignoreDuplicates: false
         });
