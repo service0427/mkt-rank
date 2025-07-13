@@ -41,14 +41,12 @@ export const logger = winston.createLogger({
   ],
 });
 
-// Add console transport for non-production environments
-if (config.environment !== 'production') {
-  logger.add(
-    new winston.transports.Console({
-      format: consoleFormat,
-    })
-  );
-}
+// Add console transport for all environments (PM2 needs this)
+logger.add(
+  new winston.transports.Console({
+    format: config.environment === 'production' ? logFormat : consoleFormat,
+  })
+);
 
 // Create a stream object with a 'write' function for Morgan
 export const loggerStream = {
