@@ -153,7 +153,7 @@ export class CoupangRankingService {
         link: result.link,
         image: result.image,
         lprice: result.lprice,
-        hprice: result.hprice || result.lprice,
+        hprice: 0,  // 쿠팡은 hprice 사용하지 않음
         mall_name: result.mallName,
         product_type: parseInt(result.productType) || 1,
         brand: result.brand || '',
@@ -258,7 +258,7 @@ export class CoupangRankingService {
           $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, 
           $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, 
           $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++},
-          $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++})`;
+          $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++})`;
         placeholders.push(placeholder);
 
         values.push(
@@ -270,6 +270,7 @@ export class CoupangRankingService {
           ranking.link,
           ranking.image,
           ranking.lprice,
+          0,  // hprice는 0으로 처리
           ranking.mall_name,
           ranking.brand,
           ranking.category1,
@@ -292,7 +293,7 @@ export class CoupangRankingService {
       const query = `
         INSERT INTO cp_rankings (
           keyword_id, keyword_name, product_id, rank, title, link, image,
-          lprice, mall_name, brand,
+          lprice, hprice, mall_name, brand,
           category1, category2, 
           seller_name, delivery_type,
           is_rocket, is_rocket_fresh, is_rocket_global,
