@@ -297,7 +297,7 @@ export class CoupangDataSyncService {
           rank,
           title,
           lprice,
-          hprice,
+          NULL as hprice,  -- hprice는 NULL로 처리
           image,
           mall_name,
           brand,
