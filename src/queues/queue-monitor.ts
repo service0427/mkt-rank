@@ -58,7 +58,12 @@ export class QueueMonitor {
     
     logger.info(`Checking collection complete: processed=${processed}, total=${this.totalKeywords}`);
     
-    if (processed >= this.totalKeywords && this.totalKeywords > 0) {
+    // 이미 처리된 경우 무시
+    if (this.totalKeywords === 0) {
+      return;
+    }
+    
+    if (processed >= this.totalKeywords) {
       const queueStatus = await rankingQueue.getJobCounts();
       
       logger.info(`Queue status: waiting=${queueStatus.waiting}, active=${queueStatus.active}`);
@@ -80,7 +85,7 @@ export class QueueMonitor {
         // 모든 키워드 수집이 완료되면 hourly sync 실행
         await this.runHourlySyncAfterCollection();
         
-        // 초기화
+        // 초기화 - 먼저 하여 재실행 방지
         this.resetCounters();
       }
     }
