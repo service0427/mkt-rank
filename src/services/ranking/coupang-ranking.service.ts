@@ -119,6 +119,12 @@ export class CoupangRankingService {
       const firstPage = await this.fetchPageWithMetrics(keyword, 1);
       allResults.push(...firstPage.results);
 
+      // 결과가 없으면 로그만 남기고 종료
+      if (firstPage.totalCount === 0) {
+        logger.warn(`No results found for Coupang keyword: ${keyword.keyword}`);
+        return;
+      }
+
       // 총 페이지 수 계산 (쿠팡은 페이지당 100개)
       const itemsPerPage = 100;
       const totalPages = Math.min(
@@ -232,6 +238,12 @@ export class CoupangRankingService {
    * 쿠팡 랭킹을 로컬 DB에 저장
    */
   private async saveCoupangRankings(rankings: CoupangRanking[]): Promise<void> {
+    // rankings가 비어있으면 로그만 남기고 리턴
+    if (rankings.length === 0) {
+      logger.warn('No Coupang rankings to save');
+      return;
+    }
+
     const client = await this.localDbService.pool.connect();
     try {
       await client.query('BEGIN');
