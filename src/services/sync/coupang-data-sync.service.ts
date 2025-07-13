@@ -50,14 +50,15 @@ export class CoupangDataSyncService {
       // 1. 현재 랭킹 동기화
       await this.syncCurrentRankings(keywordIds);
 
-      // 2. 시간별 스냅샷 동기화 (매시 정각에만)
+      // 2. 시간별 스냅샷 동기화는 queue-monitor에서 모든 수집 완료 후 실행
+      // 개별 키워드 수집 시에는 실행하지 않음
       const now = new Date();
-      if (now.getMinutes() >= 0 && now.getMinutes() < 5) {
-        await this.syncHourlySnapshots(keywordIds);
-      }
+      logger.info(`Skipping hourly sync during individual collection at ${now.toISOString()}`);
 
-      // 3. 일별 스냅샷 동기화 (자정에만)
-      if (now.getHours() === 0 && now.getMinutes() < 5) {
+      // 3. 일별 스냅샷 동기화 (KST 자정인 경우)
+      // UTC 15시 = KST 00시
+      if (now.getHours() === 15 && now.getMinutes() === 0) {
+        logger.info('Running daily snapshot sync at KST midnight');
         await this.syncDailySnapshots(keywordIds);
       }
 
@@ -116,7 +117,35 @@ export class CoupangDataSyncService {
       // Supabase에 일괄 삽입
       const { error } = await this.supabase.client
         .from('cp_rankings_hourly')
-        .upsert(hourlyData, {
+        .upsert(hourlyData.map(data => ({
+          keyword_id: data.keyword_id,
+          product_id: data.product_id,
+          hour: data.hour,
+          rank: data.rank,
+          title: data.title,
+          lprice: data.lprice,
+          hprice: data.hprice,
+          image: data.image,
+          mall_name: data.mall_name,
+          brand: data.brand,
+          category1: data.category1,
+          category2: data.category2,
+          category3: data.category3,
+          category4: data.category4,
+          link: data.link,
+          seller_name: data.seller_name,
+          is_rocket: data.is_rocket,
+          is_rocket_fresh: data.is_rocket_fresh,
+          is_rocket_global: data.is_rocket_global,
+          delivery_type: data.delivery_type,
+          rating: data.rating,
+          review_count: data.review_count,
+          is_wow_deal: data.is_wow_deal,
+          discount_rate: data.discount_rate,
+          original_price: data.original_price,
+          card_discount: data.card_discount,
+          collected_at: data.collected_at
+        })), {
           onConflict: 'keyword_id,product_id,hour',
           ignoreDuplicates: false
         });
@@ -215,7 +244,10 @@ export class CoupangDataSyncService {
 
       const { error: insertError } = await this.supabase.client
         .from('cp_rankings_current')
-        .insert(dataToInsert);
+        .upsert(dataToInsert, {
+          onConflict: 'keyword_id,product_id',
+          ignoreDuplicates: false
+        });
 
       if (insertError) {
         throw insertError;
@@ -251,31 +283,48 @@ export class CoupangDataSyncService {
   }
 
   /**
-   * 로컬 DB에서 시간별 집계 데이터 가져오기
+   * 로컬 DB에서 시간별 데이터 가져오기 (집계하지 않고 원본 데이터)
    */
   private async getHourlyCoupangAggregates(keywordIds?: string[]): Promise<any[]> {
     const currentHour = new Date();
     currentHour.setMinutes(0, 0, 0);
 
     let query = `
-      SELECT 
-        keyword_id,
-        product_id,
-        date_trunc('hour', collected_at) as hour,
-        MIN(rank) as best_rank,
-        MAX(rank) as worst_rank,
-        AVG(rank)::numeric(10,2) as avg_rank,
-        COUNT(*) as count,
-        MIN(lprice) as min_price,
-        MAX(lprice) as max_price,
-        AVG(lprice)::numeric(10,2) as avg_price,
-        MAX(CASE WHEN is_rocket THEN 1 ELSE 0 END)::boolean as is_rocket,
-        AVG(rating)::numeric(3,2) as avg_rating,
-        AVG(review_count)::integer as avg_review_count
-      FROM cp_rankings
-      WHERE date_trunc('hour', collected_at) = $1
-        ${keywordIds ? 'AND keyword_id = ANY($2)' : ''}
-      GROUP BY keyword_id, product_id, hour
+      WITH latest_hour_data AS (
+        SELECT DISTINCT ON (keyword_id, product_id)
+          keyword_id,
+          product_id,
+          rank,
+          title,
+          lprice,
+          hprice,
+          image,
+          mall_name,
+          brand,
+          category1,
+          category2,
+          category3,
+          category4,
+          link,
+          seller_name,
+          is_rocket,
+          is_rocket_fresh,
+          is_rocket_global,
+          delivery_type,
+          rating,
+          review_count,
+          is_wow_deal,
+          discount_rate,
+          original_price,
+          card_discount,
+          date_trunc('hour', collected_at) as hour,
+          collected_at
+        FROM cp_rankings
+        WHERE date_trunc('hour', collected_at) = $1
+          ${keywordIds ? 'AND keyword_id = ANY($2)' : ''}
+        ORDER BY keyword_id, product_id, collected_at DESC
+      )
+      SELECT * FROM latest_hour_data
     `;
 
     const params = keywordIds ? [currentHour, keywordIds] : [currentHour];

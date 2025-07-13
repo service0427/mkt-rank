@@ -4,6 +4,7 @@ import { logger } from '../utils/logger';
 import { LocalPostgresService } from '../services/database/local-postgres.service';
 import { SupabaseService } from '../services/database/supabase.service';
 import { SimplifiedDataSyncService } from '../services/sync/data-sync-simplified.service';
+import { CoupangDataSyncService } from '../services/sync/coupang-data-sync.service';
 
 export class QueueMonitor {
   private fileLogger: FileLogger;
@@ -91,16 +92,48 @@ export class QueueMonitor {
       
       const localDb = new LocalPostgresService();
       const supabase = new SupabaseService();
-      const syncService = new SimplifiedDataSyncService(localDb, supabase);
       
-      // Get active keywords
-      const keywords = await supabase.getActiveKeywords();
-      const keywordIds = keywords.map(k => k.id);
+      // Get all active keywords
+      const allKeywords = await supabase.getActiveKeywords();
       
-      if (keywordIds.length > 0) {
-        logger.info(`Syncing hourly snapshots for ${keywordIds.length} keywords`);
-        await syncService.syncHourlySnapshots(keywordIds);
-        logger.info('Hourly sync completed successfully');
+      // Separate keywords by type
+      const shoppingKeywords = allKeywords.filter(k => k.type === 'shopping');
+      const coupangKeywords = allKeywords.filter(k => k.type === 'cp');
+      
+      // Sync shopping keywords
+      if (shoppingKeywords.length > 0) {
+        const shoppingKeywordIds = shoppingKeywords.map(k => k.id);
+        logger.info(`Syncing ${shoppingKeywordIds.length} shopping keywords...`);
+        
+        const shoppingSyncService = new SimplifiedDataSyncService(localDb, supabase);
+        await shoppingSyncService.syncCurrentRankings(shoppingKeywordIds);
+        await shoppingSyncService.syncHourlySnapshots(shoppingKeywordIds);
+        
+        // Daily sync at midnight (KST 00:00 = UTC 15:00)
+        const now = new Date();
+        if (now.getHours() === 15 && now.getMinutes() === 0) {
+          await shoppingSyncService.syncDailySnapshots(shoppingKeywordIds);
+        }
+        
+        logger.info('Shopping sync completed successfully');
+      }
+      
+      // Sync coupang keywords
+      if (coupangKeywords.length > 0) {
+        const coupangKeywordIds = coupangKeywords.map(k => k.id);
+        logger.info(`Syncing ${coupangKeywordIds.length} coupang keywords...`);
+        
+        const coupangSyncService = new CoupangDataSyncService(localDb, supabase);
+        await coupangSyncService.syncCurrentRankings(coupangKeywordIds);
+        await coupangSyncService.syncHourlySnapshots(coupangKeywordIds);
+        
+        // Daily sync at midnight (KST 00:00 = UTC 15:00)
+        const now = new Date();
+        if (now.getHours() === 15 && now.getMinutes() === 0) {
+          await coupangSyncService.syncDailySnapshots(coupangKeywordIds);
+        }
+        
+        logger.info('Coupang sync completed successfully');
       }
       
       await localDb.cleanup();
