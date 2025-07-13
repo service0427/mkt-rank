@@ -1,7 +1,6 @@
 import { logger } from './utils/logger';
 import { RankingQueueScheduler } from './schedulers/ranking-queue.scheduler';
 import { config } from './config';
-import express from 'express';
 
 // Create scheduler instance
 const scheduler = new RankingQueueScheduler();
@@ -49,32 +48,6 @@ const main = async () => {
       queueConcurrency: process.env.QUEUE_CONCURRENCY || '3',
     });
 
-    // Start a simple API server for queue control
-    const app = express();
-    app.use(express.json());
-    
-    app.post('/trigger', async (_req, res) => {
-      try {
-        await scheduler.runManual();
-        res.json({ success: true, message: 'Collection triggered' });
-      } catch (error: any) {
-        res.status(500).json({ success: false, error: error.message });
-      }
-    });
-    
-    app.get('/status', async (_req, res) => {
-      try {
-        const status = await scheduler.getStatus();
-        res.json(status);
-      } catch (error: any) {
-        res.status(500).json({ error: error.message });
-      }
-    });
-    
-    const PORT = process.env.QUEUE_CONTROL_PORT || 3005;
-    app.listen(PORT, () => {
-      logger.info(`Queue control API running on port ${PORT}`);
-    });
 
     // Start the queue scheduler
     await scheduler.start();
