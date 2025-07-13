@@ -19,13 +19,17 @@ interface CoupangRankingRecord {
   category2: string;
   category3: string;
   category4: string;
+  seller_name?: string;
   is_rocket: boolean;
   is_rocket_fresh?: boolean;
   is_rocket_global?: boolean;
   delivery_type?: string;
   rating?: number;
   review_count?: number;
+  is_wow_deal?: boolean;
   discount_rate?: number;
+  original_price?: number;
+  card_discount?: number;
   collected_at: Date;
 }
 
@@ -190,20 +194,22 @@ export class CoupangDataSyncService {
         lprice: ranking.lprice,
         hprice: ranking.hprice,
         mall_name: ranking.mall_name,
-        product_type: ranking.product_type,
         brand: ranking.brand,
-        maker: ranking.maker,
         category1: ranking.category1,
         category2: ranking.category2,
         category3: ranking.category3,
         category4: ranking.category4,
+        seller_name: ranking.seller_name,
         is_rocket: ranking.is_rocket,
         is_rocket_fresh: ranking.is_rocket_fresh,
         is_rocket_global: ranking.is_rocket_global,
         delivery_type: ranking.delivery_type,
         rating: ranking.rating,
         review_count: ranking.review_count,
+        is_wow_deal: ranking.is_wow_deal,
         discount_rate: ranking.discount_rate,
+        original_price: ranking.original_price,
+        card_discount: ranking.card_discount,
         collected_at: ranking.collected_at
       }));
 
