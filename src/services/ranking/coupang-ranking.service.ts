@@ -258,7 +258,8 @@ export class CoupangRankingService {
           $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, 
           $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, 
           $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++},
-          $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++})`;
+          $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, 
+          $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++})`;
         placeholders.push(placeholder);
 
         values.push(
@@ -273,8 +274,11 @@ export class CoupangRankingService {
           0,  // hprice는 0으로 처리
           ranking.mall_name,
           ranking.brand,
+          ranking.maker || '',
           ranking.category1,
           ranking.category2,
+          ranking.category3 || '',
+          ranking.category4 || '',
           ranking.seller_name || '',
           ranking.delivery_type || '',
           ranking.is_rocket || false,
@@ -293,8 +297,8 @@ export class CoupangRankingService {
       const query = `
         INSERT INTO cp_rankings (
           keyword_id, keyword_name, product_id, rank, title, link, image,
-          lprice, hprice, mall_name, brand,
-          category1, category2, 
+          lprice, hprice, mall_name, brand, maker,
+          category1, category2, category3, category4,
           seller_name, delivery_type,
           is_rocket, is_rocket_fresh, is_rocket_global,
           rating, review_count, is_wow_deal, discount_rate, original_price,

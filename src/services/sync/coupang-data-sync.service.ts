@@ -14,7 +14,6 @@ interface CoupangRankingRecord {
   mall_name: string;
   product_type: number;
   brand: string;
-  maker: string;
   category1: string;
   category2: string;
   category3: string;
