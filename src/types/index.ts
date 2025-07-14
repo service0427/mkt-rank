@@ -121,3 +121,17 @@ export class DatabaseError extends Error {
     this.name = 'DatabaseError';
   }
 }
+
+export class CoupangBlockedError extends Error {
+  constructor(
+    message: string,
+    public blockedInfo?: {
+      searchUrl?: string;
+      error?: string;
+      failedRequests?: any[];
+    }
+  ) {
+    super(message);
+    this.name = 'CoupangBlockedError';
+  }
+}

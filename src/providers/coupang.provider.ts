@@ -1,6 +1,6 @@
 import axios, { AxiosInstance, AxiosError } from 'axios';
 import { BaseSearchProvider } from './base.provider';
-import { SearchResponse, SearchResult, ApiError } from '../types';
+import { SearchResponse, SearchResult, ApiError, CoupangBlockedError } from '../types';
 import { config } from '../config';
 import { logger } from '../utils/logger';
 
@@ -25,6 +25,10 @@ interface CoupangSearchResponse {
     relatedKeywords?: string[];
     totalPages: number;
     searchUrl: string;
+    blocked?: boolean;
+    message?: string;
+    error?: string;
+    failedRequests?: any[];
     timestamp: string;
   };
   agentId: string;
@@ -77,6 +81,19 @@ export class CoupangProvider extends BaseSearchProvider {
       // API 응답 검증
       if (!response.data.success) {
         throw new Error('Coupang API request failed');
+      }
+
+      // 네트워크 차단 확인
+      if (response.data.data.blocked === true) {
+        logger.warn(`[${this.providerName}] Network blocked for keyword: ${keyword}`);
+        throw new CoupangBlockedError(
+          `Coupang network blocked for keyword: ${keyword}`,
+          {
+            searchUrl: response.data.data.searchUrl,
+            error: response.data.data.error,
+            failedRequests: response.data.data.failedRequests
+          }
+        );
       }
 
       const { products, count } = response.data.data;
