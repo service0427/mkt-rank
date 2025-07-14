@@ -124,20 +124,13 @@ export class RankingQueueScheduler {
         return;
       }
 
-      // 쇼핑 키워드 가져오기
+      // 쇼핑 키워드만 가져오기 (쿠팡은 자동 스케줄에서 제외)
       const shoppingKeywords = await this.keywordService.getActiveKeywords('shopping');
       logger.info(`Found ${shoppingKeywords.length} active shopping keywords to enqueue`);
       
-      // 쿠팡 키워드 가져오기 (type='cp')
-      const coupangKeywords = await this.keywordService.getActiveKeywords('cp');
-      logger.info(`Found ${coupangKeywords.length} active coupang keywords to enqueue`);
-      
-      // 전체 키워드 합치기 (각 키워드에 type 추가)
-      const keywords = [
-        ...shoppingKeywords.map(k => ({...k, type: 'shopping'})),
-        ...coupangKeywords.map(k => ({...k, type: 'cp'}))
-      ];
-      logger.info(`Total ${keywords.length} keywords to enqueue (shopping: ${shoppingKeywords.length}, coupang: ${coupangKeywords.length})`);
+      // 쿠팡은 수동 테스트 중이므로 자동 스케줄에서 제외
+      const keywords = shoppingKeywords.map(k => ({...k, type: 'shopping'}));
+      logger.info(`Total ${keywords.length} shopping keywords to enqueue (coupang excluded for manual testing)`);
       
       // Queue에 추가하기 전에 전체 수집 시작 로그
       if (keywords.length > 0) {
