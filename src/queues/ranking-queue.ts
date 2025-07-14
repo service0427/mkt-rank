@@ -50,6 +50,9 @@ export const addKeywordToQueue = async (keyword: string, priority: number = 0, t
       return null;
     }
 
+    // 쿠팡 키워드의 경우 초기 랜덤 딜레이 추가 (0-5초)
+    const initialDelay = type === 'cp' ? Math.floor(Math.random() * 5000) : 0;
+    
     const job = await rankingQueue.add(
       {
         keyword,
@@ -59,11 +62,16 @@ export const addKeywordToQueue = async (keyword: string, priority: number = 0, t
       },
       {
         priority,
-        delay: 0,
+        delay: initialDelay,
       }
     );
 
-    logger.info(`Added ${type} keyword ${keyword} to queue with priority ${priority}`);
+    if (initialDelay > 0) {
+      logger.info(`Added ${type} keyword ${keyword} to queue with priority ${priority} and initial delay ${initialDelay}ms`);
+    } else {
+      logger.info(`Added ${type} keyword ${keyword} to queue with priority ${priority}`);
+    }
+    
     return job;
   } catch (error) {
     logger.error(`Failed to add keyword ${keyword} to queue:`, error);
@@ -74,10 +82,21 @@ export const addKeywordToQueue = async (keyword: string, priority: number = 0, t
 // 쿠팡 차단된 키워드를 재시도하기 위한 특별한 함수
 export const addCoupangBlockedRetry = async (keyword: string, priority: number = 0, retryAttempt: number = 1) => {
   try {
-    // 5-10분 랜덤 딜레이 (300,000ms - 600,000ms)
-    const delayMs = 300000 + Math.floor(Math.random() * 300000);
+    // 재시도 횟수에 따라 점진적으로 증가하는 딜레이
+    let delayMs: number;
+    if (retryAttempt === 1) {
+      // 첫 번째 재시도: 5-10분
+      delayMs = 300000 + Math.floor(Math.random() * 300000);
+    } else if (retryAttempt === 2) {
+      // 두 번째 재시도: 10-15분
+      delayMs = 600000 + Math.floor(Math.random() * 300000);
+    } else {
+      // 세 번째 재시도: 15-20분
+      delayMs = 900000 + Math.floor(Math.random() * 300000);
+    }
     
-    logger.info(`Adding Coupang blocked keyword ${keyword} to retry queue with ${delayMs}ms delay (attempt ${retryAttempt}/3)`);
+    const delayMinutes = Math.round(delayMs / 60000);
+    logger.info(`Adding Coupang blocked keyword ${keyword} to retry queue with ${delayMinutes} minutes delay (attempt ${retryAttempt}/3)`);
     
     const job = await rankingQueue.add(
       {

@@ -278,4 +278,42 @@ router.post('/trigger-coupang-collection', async (_req, res) => {
   }
 });
 
+
+router.post('/clear-queue', async (req, res) => {
+  try {
+    const { type } = req.body;
+    
+    logger.info(`Clearing queue${type ? ` for type: ${type}` : ' (all types)'}`);
+    
+    const { rankingQueue } = await import('../queues/ranking-queue');
+    
+    const allJobs = await rankingQueue.getJobs(['waiting', 'active', 'delayed', 'failed']);
+    
+    let removedCount = 0;
+    
+    for (const job of allJobs) {
+      if (!type || job.data.type === type) {
+        await job.remove();
+        removedCount++;
+      }
+    }
+    
+    res.json({
+      success: true,
+      message: `Cleared ${removedCount} jobs from queue`,
+      data: {
+        removedJobs: removedCount,
+        type: type || 'all',
+      },
+      timestamp: new Date(),
+    });
+  } catch (error) {
+    logger.error('Failed to clear queue:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to clear queue',
+    });
+  }
+});
+
 export default router;

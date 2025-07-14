@@ -1,8 +1,6 @@
 import { KeywordService } from '../keyword/keyword.service';
-import { CoupangRankingService } from './coupang-ranking.service';
-import { CoupangDataSyncService } from '../sync/coupang-data-sync.service';
 import { LocalPostgresService } from '../database/local-postgres.service';
-import { SupabaseService } from '../database/supabase.service';
+import { addKeywordToQueue } from '../../queues/ranking-queue';
 import { logger } from '../../utils/logger';
 
 export interface CoupangKeywordCheckResult {
@@ -16,15 +14,9 @@ export interface CoupangKeywordCheckResult {
 
 export class CoupangInstantRankingService {
   private keywordService: KeywordService;
-  private rankingService: CoupangRankingService;
-  private syncService: CoupangDataSyncService;
 
   constructor() {
     this.keywordService = new KeywordService();
-    this.rankingService = new CoupangRankingService();
-    const localDb = new LocalPostgresService();
-    const supabase = new SupabaseService();
-    this.syncService = new CoupangDataSyncService(localDb, supabase);
   }
 
   /**
@@ -52,40 +44,23 @@ export class CoupangInstantRankingService {
       logger.info(`Creating new Coupang keyword: ${validatedKeyword}`);
       const newKeyword = await this.keywordService.createKeyword(validatedKeyword, 'cp');
       
-      // 3. 백그라운드에서 순위 수집 (비동기 처리)
-      logger.info(`Scheduling Coupang rankings collection for new keyword: ${validatedKeyword}`);
+      // 3. 큐에 추가하여 Worker가 처리하도록 함
+      logger.info(`Adding Coupang keyword to queue: ${validatedKeyword}`);
       
-      // 비동기로 처리하여 API 응답을 빠르게 반환
-      setImmediate(async () => {
-        try {
-          const searchKeyword = {
-            id: newKeyword.id,
-            user_id: null,
-            keyword: newKeyword.keyword,
-            pc_count: 0,
-            mobile_count: 0,
-            total_count: 0,
-            pc_ratio: 0,
-            mobile_ratio: 0,
-            searched_at: newKeyword.created_at,
-            type: 'cp'
-          };
-          await this.rankingService.collectKeywordRankings(searchKeyword);
-          
-          // Supabase 동기화
-          logger.info(`Syncing Coupang rankings to Supabase for keyword: ${validatedKeyword}`);
-          await this.syncService.syncCurrentRankings([newKeyword.id]);
-          await this.syncService.syncHourlySnapshots([newKeyword.id]);
-        } catch (error) {
-          logger.error(`Background collection failed for ${validatedKeyword}:`, error);
+      try {
+        const job = await addKeywordToQueue(validatedKeyword, 0, 'cp');
+        if (job) {
+          logger.info(`Successfully added keyword ${validatedKeyword} to queue (Job ID: ${job.id})`);
         }
-      });
+      } catch (error) {
+        logger.error(`Failed to add keyword ${validatedKeyword} to queue:`, error);
+      }
       
       return {
         keyword: validatedKeyword,
         keywordId: newKeyword.id,
         isNew: true,
-        message: '쿠팡 키워드 추가됨 (순위 수집은 백그라운드에서 진행 중)'
+        message: '쿠팡 키워드 추가됨 (순위 수집이 큐에 등록되었습니다)'
       };
       
     } catch (error) {
@@ -127,16 +102,12 @@ export class CoupangInstantRankingService {
    */
   async checkRocketDeliveryKeyword(keyword: string): Promise<CoupangKeywordCheckResult> {
     try {
+      // 일반 키워드와 동일하게 처리 (큐 사용)
       const result = await this.checkKeyword(keyword);
-      
-      if (result.isNew || !result.error) {
-        // 로켓배송 전용 수집 실행
-        await this.rankingService.collectRocketDeliveryOnly(keyword);
-      }
       
       return {
         ...result,
-        message: result.message + ' (로켓배송 전용)'
+        message: result.message + ' (로켓배송 상품 포함)'
       };
     } catch (error) {
       logger.error(`Failed to check rocket delivery keyword ${keyword}:`, error);

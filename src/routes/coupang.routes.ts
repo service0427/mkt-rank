@@ -213,8 +213,10 @@ async function collectAndSyncCoupangKeywords(keywords: any[]) {
         await coupangRankingService.collectKeywordRankings(keyword);
         successCount++;
         
-        // API 속도 제한 방지
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        // API 속도 제한 방지를 위한 랜덤 딜레이 (2-15초)
+        const delay = 2000 + Math.floor(Math.random() * 13000);
+        logger.info(`Coupang API delay: ${delay}ms (${Math.round(delay/1000)}s) between keywords`);
+        await new Promise(resolve => setTimeout(resolve, delay));
       } catch (error) {
         errorCount++;
         logger.error(`Failed to collect Coupang keyword: ${keyword.keyword}`, error);
