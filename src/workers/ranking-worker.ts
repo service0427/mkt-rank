@@ -1,10 +1,11 @@
 import { Job } from 'bull';
-import { rankingQueue, RankingJobData } from '../queues/ranking-queue';
+import { rankingQueue, RankingJobData, addCoupangBlockedRetry } from '../queues/ranking-queue';
 import { RankingService } from '../services/ranking/ranking.service';
 import { CoupangRankingService } from '../services/ranking/coupang-ranking.service';
 import { KeywordService } from '../services/keyword/keyword.service';
 import { logger } from '../utils/logger';
 import { FileLogger } from '../utils/file-logger';
+import { CoupangBlockedError } from '../types';
 // Import to ensure queueMonitor singleton is initialized
 import '../queues/queue-monitor';
 
@@ -80,6 +81,30 @@ export class RankingWorker {
         logger.error(`Failed to process keyword ${keyword}:`, error);
         this.fileLogger.logKeywordProcessed(keyword, false, Date.now() - startTime);
         this.fileLogger.logError(error, `Processing keyword: ${keyword}`);
+        
+        // 쿠팡 네트워크 차단 에러 처리
+        if (error instanceof CoupangBlockedError && type === 'cp') {
+          const currentRetryCount = job.data.retryCount || 0;
+          
+          if (currentRetryCount < 3) {
+            logger.warn(`Coupang blocked for keyword ${keyword}, scheduling retry ${currentRetryCount + 1}/3`);
+            
+            // 재시도 작업 추가
+            await addCoupangBlockedRetry(keyword, job.data.priority, currentRetryCount + 1);
+            
+            // 현재 작업은 성공으로 처리 (재시도 예약됨)
+            return {
+              keyword,
+              duration: Date.now() - startTime,
+              success: false,
+              blockedRetry: currentRetryCount + 1,
+              completedAt: new Date(),
+            };
+          } else {
+            logger.error(`Coupang blocked for keyword ${keyword} - max retries (3) reached, giving up`);
+          }
+        }
+        
         throw error;
       }
     });

@@ -220,4 +220,62 @@ router.post('/trigger-collection', async (_req, res) => {
   }
 });
 
+router.post('/trigger-coupang-collection', async (_req, res) => {
+  try {
+    logger.info('Manual Coupang collection triggered via API');
+    
+    // 직접 키워드를 가져와서 큐에 추가
+    const { KeywordService } = await import('../services/keyword/keyword.service');
+    const { addKeywordToQueue } = await import('../queues/ranking-queue');
+    const { queueMonitor } = await import('../queues/queue-monitor');
+    
+    const keywordService = new KeywordService();
+    
+    // 쿠팡 키워드만 가져오기
+    const coupangKeywords = await keywordService.getActiveKeywords('cp');
+    logger.info(`Found ${coupangKeywords.length} active coupang keywords`);
+    
+    if (coupangKeywords.length === 0) {
+      res.json({
+        success: false,
+        message: 'No active Coupang keywords found',
+        data: {
+          totalKeywords: 0,
+          addedToQueue: 0
+        },
+        timestamp: new Date(),
+      });
+      return;
+    }
+    
+    // Queue Monitor에 전체 수집 시작 알림
+    queueMonitor.startCollection(coupangKeywords.length);
+    
+    // 큐에 추가
+    let addedCount = 0;
+    
+    for (const keyword of coupangKeywords) {
+      const job = await addKeywordToQueue(keyword.keyword, keyword.priority || 0, 'cp');
+      if (job) addedCount++;
+    }
+    
+    res.json({
+      success: true,
+      message: 'Coupang collection triggered successfully',
+      data: {
+        totalKeywords: coupangKeywords.length,
+        addedToQueue: addedCount,
+        coupang: coupangKeywords.length
+      },
+      timestamp: new Date(),
+    });
+  } catch (error) {
+    logger.error('Failed to trigger Coupang collection:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to trigger Coupang collection',
+    });
+  }
+});
+
 export default router;

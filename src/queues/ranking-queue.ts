@@ -71,6 +71,40 @@ export const addKeywordToQueue = async (keyword: string, priority: number = 0, t
   }
 };
 
+// 쿠팡 차단된 키워드를 재시도하기 위한 특별한 함수
+export const addCoupangBlockedRetry = async (keyword: string, priority: number = 0, retryAttempt: number = 1) => {
+  try {
+    // 5-10분 랜덤 딜레이 (300,000ms - 600,000ms)
+    const delayMs = 300000 + Math.floor(Math.random() * 300000);
+    
+    logger.info(`Adding Coupang blocked keyword ${keyword} to retry queue with ${delayMs}ms delay (attempt ${retryAttempt}/3)`);
+    
+    const job = await rankingQueue.add(
+      {
+        keyword,
+        priority,
+        startedAt: new Date(),
+        type: 'cp',
+        retryCount: retryAttempt,
+      },
+      {
+        priority,
+        delay: delayMs,
+        attempts: 1, // 일반 재시도 비활성화 (수동으로 처리)
+        backoff: {
+          type: 'fixed',
+          delay: 0,
+        },
+      }
+    );
+
+    return job;
+  } catch (error) {
+    logger.error(`Failed to add blocked Coupang keyword ${keyword} to retry queue:`, error);
+    throw error;
+  }
+};
+
 export const getQueueStatus = async () => {
   const waiting = await rankingQueue.getWaitingCount();
   const active = await rankingQueue.getActiveCount();
