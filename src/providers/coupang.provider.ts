@@ -137,6 +137,10 @@ export class CoupangProvider extends BaseSearchProvider {
         },
       };
     } catch (error) {
+      // CoupangBlockedError는 그대로 전파
+      if ((error as any).name === 'CoupangBlockedError') {
+        throw error;
+      }
       return this.handleSearchError(error as Error, keyword);
     }
   }

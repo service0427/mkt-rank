@@ -5,7 +5,6 @@ import { CoupangRankingService } from '../services/ranking/coupang-ranking.servi
 import { KeywordService } from '../services/keyword/keyword.service';
 import { logger } from '../utils/logger';
 import { FileLogger } from '../utils/file-logger';
-import { CoupangBlockedError } from '../types';
 // Import to ensure queueMonitor singleton is initialized
 import '../queues/queue-monitor';
 
@@ -83,8 +82,13 @@ export class RankingWorker {
         this.fileLogger.logError(error, `Processing keyword: ${keyword}`);
         
         // 쿠팡 네트워크 차단 에러 처리
-        if (error instanceof CoupangBlockedError && type === 'cp') {
+        const err = error as any;
+        logger.info(`Error type: ${err.constructor?.name}, Error name: ${err.name}, Type: ${type}`);
+        
+        if (err.name === 'CoupangBlockedError' && type === 'cp') {
           const currentRetryCount = job.data.retryCount || 0;
+          
+          logger.info(`CoupangBlockedError detected for keyword ${keyword}, retryCount: ${currentRetryCount}`);
           
           if (currentRetryCount < 3) {
             logger.warn(`Coupang blocked for keyword ${keyword}, scheduling retry ${currentRetryCount + 1}/3`);
