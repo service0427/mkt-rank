@@ -68,6 +68,7 @@ export class CoupangProvider extends BaseSearchProvider {
 
       const response = await this.axiosInstance.post<CoupangSearchResponse>('', {
         keyword: keyword,
+        page: page,
         limit: itemsPerPage
       });
 
@@ -78,8 +79,8 @@ export class CoupangProvider extends BaseSearchProvider {
         throw new Error('Coupang API request failed');
       }
 
-      const { products } = response.data.data;
-      const totalCount = products.length;
+      const { products, count } = response.data.data;
+      const totalCount = count || products.length;
 
       // 쿠팡 응답을 표준 포맷으로 변환
       const results: SearchResult[] = products.map((product) => ({
