@@ -114,9 +114,10 @@ export class QueueMonitor {
         await shoppingSyncService.syncCurrentRankings(shoppingKeywordIds);
         await shoppingSyncService.syncHourlySnapshots(shoppingKeywordIds);
         
-        // Daily sync at midnight (KST 00:00 = UTC 15:00)
+        // Daily sync at midnight (KST 00:00-00:05 = UTC 15:00-15:05)
         const now = new Date();
-        if (now.getHours() === 15 && now.getMinutes() === 0) {
+        if (now.getHours() === 15 && now.getMinutes() >= 0 && now.getMinutes() <= 5) {
+          logger.info(`Daily sync check at ${now.toISOString()} (UTC ${now.getHours()}:${now.getMinutes()})`);
           await shoppingSyncService.syncDailySnapshots(shoppingKeywordIds);
         }
         
@@ -132,9 +133,10 @@ export class QueueMonitor {
         await coupangSyncService.syncCurrentRankings(coupangKeywordIds);
         await coupangSyncService.syncHourlySnapshots(coupangKeywordIds);
         
-        // Daily sync at midnight (KST 00:00 = UTC 15:00)
+        // Daily sync at midnight (KST 00:00-00:05 = UTC 15:00-15:05)
         const now = new Date();
-        if (now.getHours() === 15 && now.getMinutes() === 0) {
+        if (now.getHours() === 15 && now.getMinutes() >= 0 && now.getMinutes() <= 5) {
+          logger.info(`Daily sync check for Coupang at ${now.toISOString()} (UTC ${now.getHours()}:${now.getMinutes()})`);
           await coupangSyncService.syncDailySnapshots(coupangKeywordIds);
         }
         
