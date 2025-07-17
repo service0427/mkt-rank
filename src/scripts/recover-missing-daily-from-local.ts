@@ -136,30 +136,19 @@ async function recoverMissingDailyDataFromLocal() {
     logger.info('Recovery process completed');
     
     // 복구 후 통계 확인
-    const { data: stats, error: statsError } = await supabase.client
-      .from('shopping_rankings_daily')
-      .select('date', { count: 'exact' })
-      .gte('date', '2025-07-12')
-      .lte('date', '2025-07-15')
-      .order('date', { ascending: true });
-      
-    if (statsError) {
-      logger.error('Failed to get recovery stats:', statsError);
-    } else {
-      logger.info('Recovery statistics:');
-      const dateStats = await Promise.all(
-        ['2025-07-12', '2025-07-13', '2025-07-14', '2025-07-15'].map(async (date) => {
-          const { count } = await supabase.client
-            .from('shopping_rankings_daily')
-            .select('*', { count: 'exact', head: true })
-            .eq('date', date);
-          return { date, count };
-        })
-      );
-      dateStats.forEach(stat => {
-        logger.info(`${stat.date}: ${stat.count || 0} records`);
-      });
-    }
+    logger.info('Recovery statistics:');
+    const dateStats = await Promise.all(
+      ['2025-07-12', '2025-07-13', '2025-07-14', '2025-07-15'].map(async (date) => {
+        const { count } = await supabase.client
+          .from('shopping_rankings_daily')
+          .select('*', { count: 'exact', head: true })
+          .eq('date', date);
+        return { date, count };
+      })
+    );
+    dateStats.forEach(stat => {
+      logger.info(`${stat.date}: ${stat.count || 0} records`);
+    });
     
   } catch (error) {
     logger.error('Recovery process failed:', error);
