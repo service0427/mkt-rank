@@ -7,7 +7,8 @@ dotenv.config();
 const parseNaverApiKeys = (): NaverApiKey[] => {
   const apiKeysStr = process.env.NAVER_API_KEYS || '';
   if (!apiKeysStr) {
-    throw new Error('NAVER_API_KEYS environment variable is required');
+    // Return empty array if no keys provided (will use DB keys)
+    return [];
   }
 
   return apiKeysStr.split(',').map((keyPair) => {
@@ -56,7 +57,6 @@ export function validateConfig(): void {
   const required = [
     'SUPABASE_URL',
     'SUPABASE_ANON_KEY',
-    'NAVER_API_KEYS',
   ];
 
   const missing = required.filter((key) => !process.env[key]);
@@ -65,10 +65,12 @@ export function validateConfig(): void {
     throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
   }
 
-  // Validate API keys format
-  try {
-    parseNaverApiKeys();
-  } catch (error) {
-    throw new Error(`Invalid NAVER_API_KEYS format: ${error}`);
+  // Validate API keys format if provided
+  if (process.env.NAVER_API_KEYS) {
+    try {
+      parseNaverApiKeys();
+    } catch (error) {
+      throw new Error(`Invalid NAVER_API_KEYS format: ${error}`);
+    }
   }
 }

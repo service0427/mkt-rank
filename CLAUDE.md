@@ -46,3 +46,38 @@ curl -X POST http://localhost:3333/api/monitor/trigger-collection
 ```bash
 curl http://localhost:3333/api/monitor/queue-status
 ```
+
+## API 키 관리
+
+### 1. API 키 목록 조회
+```bash
+curl http://localhost:3001/api/keys
+```
+
+### 2. API 키 추가
+```bash
+curl -X POST http://localhost:3001/api/keys \
+  -H "Content-Type: application/json" \
+  -d '{
+    "provider": "naver_shopping",
+    "client_id": "YOUR_CLIENT_ID",
+    "client_secret": "YOUR_CLIENT_SECRET",
+    "description": "키 설명"
+  }'
+```
+
+### 3. API 키 검증
+```bash
+curl -X POST http://localhost:3001/api/keys/validate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "provider": "naver_shopping",
+    "client_id": "YOUR_CLIENT_ID",
+    "client_secret": "YOUR_CLIENT_SECRET"
+  }'
+```
+
+### 4. API 키 관리 페이지
+```
+http://localhost:3001/api-keys
+```

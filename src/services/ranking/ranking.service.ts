@@ -2,7 +2,7 @@ import { SupabaseService } from '../database/supabase.service';
 import { LocalPostgresService } from '../database/local-postgres.service';
 import { SimplifiedDataSyncService } from '../sync/data-sync-simplified.service';
 import { NaverShoppingProvider } from '../../providers/naver-shopping.provider';
-import { ApiKeyManager } from '../../providers/api-key-manager';
+import { ApiKeyManagerFactory } from '../../factory/api-key-manager.factory';
 import { logger } from '../../utils/logger';
 import { config } from '../../config';
 import { Keyword, SearchResult, ShoppingRanking } from '../../types';
@@ -11,14 +11,17 @@ export class RankingService {
   private supabaseService: SupabaseService;
   private localDbService: LocalPostgresService;
   private dataSyncService: SimplifiedDataSyncService;
-  private searchProvider: NaverShoppingProvider;
+  private searchProvider!: NaverShoppingProvider;
 
   constructor() {
     this.supabaseService = new SupabaseService();
     this.localDbService = new LocalPostgresService();
     this.dataSyncService = new SimplifiedDataSyncService(this.localDbService, this.supabaseService);
-    const apiKeyManager = new ApiKeyManager(config.naver.apiKeys);
-    this.searchProvider = new NaverShoppingProvider(apiKeyManager);
+  }
+
+  private async initializeSearchProvider(): Promise<void> {
+    const apiKeyManager = await ApiKeyManagerFactory.getNaverShoppingManagerWithFallback();
+    this.searchProvider = new NaverShoppingProvider(apiKeyManager as any);
   }
 
   /**
@@ -29,6 +32,10 @@ export class RankingService {
     const startTime = Date.now();
 
     try {
+      // Initialize search provider if not already done
+      if (!this.searchProvider) {
+        await this.initializeSearchProvider();
+      }
       // Get active keywords
       const keywords = await this.supabaseService.getActiveKeywords();
       
@@ -82,6 +89,11 @@ export class RankingService {
     logger.info(`Collecting rankings for keyword: ${keyword.keyword}`);
     const collectedAt = new Date();
     const allResults: SearchResult[] = [];
+
+    // Initialize search provider if not already done
+    if (!this.searchProvider) {
+      await this.initializeSearchProvider();
+    }
 
     try {
       // Fetch first page to get total count

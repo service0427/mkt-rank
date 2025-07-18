@@ -5,12 +5,15 @@ import https from 'https';
 import http from 'http';
 import fs from 'fs';
 import { NaverShoppingProvider } from '../providers/naver-shopping.provider';
+import { ApiKeyManagerFactory } from '../factory/api-key-manager.factory';
+import { DbApiKeyManager } from '../providers/db-api-key-manager';
 import { ApiKeyManager } from '../providers/api-key-manager';
-import { config, validateConfig } from '../config';
+import { validateConfig } from '../config';
 import { logger } from '../utils/logger';
 import monitorRoutes from '../routes/monitor.routes';
 import rankingRoutes from '../routes/ranking.routes';
-import coupangRoutes from '../routes/coupang.routes';
+// import coupangRoutes from '../routes/coupang.routes';
+import apiKeysRoutes from '../routes/api-keys.routes';
 
 const app = express();
 const HTTP_PORT = process.env.API_PORT || 3001;
@@ -27,24 +30,35 @@ app.use('/api/monitor', monitorRoutes);
 app.use('/api/ranking', rankingRoutes);
 
 // Coupang routes
-app.use('/api/coupang', coupangRoutes);
+// app.use('/api/coupang', coupangRoutes);
+
+// API Keys routes
+app.use('/api/keys', apiKeysRoutes);
 
 // Serve monitoring dashboard
 app.get('/monitor', (_req, res) => {
   res.sendFile(path.join(__dirname, '../views/monitor-dashboard.html'));
 });
 
+// Serve API keys management page
+app.get('/api-keys', (_req, res) => {
+  res.sendFile(path.join(__dirname, '../views/api-keys-management.html'));
+});
+
 // Initialize providers
 let naverProvider: NaverShoppingProvider;
-let apiKeyManager: ApiKeyManager;
+let apiKeyManager: DbApiKeyManager | ApiKeyManager;
 
-try {
-  validateConfig();
-  apiKeyManager = new ApiKeyManager(config.naver.apiKeys);
-  naverProvider = new NaverShoppingProvider(apiKeyManager);
-} catch (error) {
-  logger.error('Failed to initialize API server:', error);
-  process.exit(1);
+async function initializeProviders() {
+  try {
+    validateConfig();
+    apiKeyManager = await ApiKeyManagerFactory.getNaverShoppingManagerWithFallback();
+    naverProvider = new NaverShoppingProvider(apiKeyManager as any);
+    logger.info('API providers initialized successfully');
+  } catch (error) {
+    logger.error('Failed to initialize API server:', error);
+    process.exit(1);
+  }
 }
 
 // Health check
@@ -77,7 +91,7 @@ app.get('/api/search', async (req, res) => {
     const searchTime = Date.now() - startTime;
     
     // Get API key stats from the manager
-    const apiKeyStats = apiKeyManager.getStats();
+    const apiKeyStats = 'getStats' in apiKeyManager ? apiKeyManager.getStats() : [];
     
     res.json({
       keyword,
@@ -89,11 +103,11 @@ app.get('/api/search', async (req, res) => {
     });
     
     logger.info(`API search completed for keyword: ${keyword}, found ${results.results.length} results`);
-  } catch (error: any) {
+  } catch (error) {
     logger.error('API search error:', error);
     res.status(500).json({ 
       error: 'Search failed',
-      message: error.message 
+      message: error instanceof Error ? error.message : 'Unknown error' 
     });
   }
 });
@@ -137,18 +151,21 @@ app.get('/api/search/full', async (req, res) => {
       results: allResults
     });
     
-  } catch (error: any) {
+  } catch (error) {
     logger.error('API full search error:', error);
     res.status(500).json({ 
       error: 'Search failed',
-      message: error.message 
+      message: error instanceof Error ? error.message : 'Unknown error' 
     });
   }
 });
 
 // Start server
-export function startApiServer() {
+export async function startApiServer() {
   console.log('Starting API server...');
+  
+  // Initialize providers first
+  await initializeProviders();
   
   // HTTP 서버 시작
   const httpServer = http.createServer(app);
@@ -252,5 +269,8 @@ function logEndpoints() {
 
 // If running directly
 if (require.main === module) {
-  startApiServer();
+  void startApiServer().catch(error => {
+    logger.error('Failed to start API server:', error);
+    process.exit(1);
+  });
 }

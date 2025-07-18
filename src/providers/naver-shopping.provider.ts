@@ -2,7 +2,7 @@ import axios, { AxiosInstance, AxiosError } from 'axios';
 import { BaseSearchProvider } from './base.provider';
 import { SearchResponse, SearchResult, ApiError } from '../types';
 import { config } from '../config';
-import { ApiKeyManager } from './api-key-manager';
+import { DbApiKeyManager } from './db-api-key-manager';
 import { logger } from '../utils/logger';
 
 interface NaverSearchItem {
@@ -33,9 +33,9 @@ interface NaverSearchResponse {
 export class NaverShoppingProvider extends BaseSearchProvider {
   protected providerName = 'NaverShopping';
   protected apiUrl = config.naver.apiUrl;
-  private apiKeyManager: ApiKeyManager;
+  private apiKeyManager: DbApiKeyManager;
 
-  constructor(apiKeyManager: ApiKeyManager) {
+  constructor(apiKeyManager: DbApiKeyManager) {
     super();
     this.apiKeyManager = apiKeyManager;
   }
@@ -61,7 +61,7 @@ export class NaverShoppingProvider extends BaseSearchProvider {
 
     while (retryCount < maxRetries) {
       try {
-        this.apiKeyManager.getNextKey();
+        await this.apiKeyManager.getNextKey();
         const axiosInstance = this.createAxiosInstance();
         
         const display = config.search.itemsPerPage;
@@ -89,7 +89,7 @@ export class NaverShoppingProvider extends BaseSearchProvider {
       } catch (error) {
         if (this.isRateLimitError(error)) {
           const currentKey = this.apiKeyManager.getCurrentKey();
-          this.apiKeyManager.markKeyAsLimited(currentKey);
+          await this.apiKeyManager.markKeyAsLimited(currentKey);
           retryCount++;
           
           if (retryCount < maxRetries) {
