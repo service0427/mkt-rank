@@ -31,7 +31,7 @@ async function migrateApiKeys() {
         }
         
         // DB에 추가
-        const newKey = await apiKeyService.createApiKey({
+        await apiKeyService.createApiKey({
           provider: 'naver_shopping',
           client_id: key.clientId,
           client_secret: key.clientSecret,
