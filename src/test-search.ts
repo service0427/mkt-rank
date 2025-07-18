@@ -13,7 +13,7 @@ async function testSearch() {
     const apiKeyManager = new ApiKeyManager(config.naver.apiKeys);
     
     // Initialize provider
-    const provider = new NaverShoppingProvider(apiKeyManager);
+    const provider = new NaverShoppingProvider(apiKeyManager as any);
 
     // Test keyword
     const testKeyword = process.argv[2] || '노트북';
