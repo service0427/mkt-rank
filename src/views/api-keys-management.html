@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API 키 관리 - MKT Rank</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            background-color: #fff;
+            padding: 20px;
+            margin-bottom: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .add-key-form {
+            background-color: #fff;
+            padding: 20px;
+            margin-bottom: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        input[type="text"],
+        select,
+        textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 60px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .btn-primary {
+            background-color: #3498db;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #2980b9;
+        }
+
+        .btn-success {
+            background-color: #27ae60;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background-color: #229954;
+        }
+
+        .btn-danger {
+            background-color: #e74c3c;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background-color: #c0392b;
+        }
+
+        .btn-secondary {
+            background-color: #95a5a6;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background-color: #7f8c8d;
+        }
+
+        .keys-table {
+            background-color: #fff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            background-color: #34495e;
+            color: white;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        td {
+            padding: 15px;
+            border-bottom: 1px solid #ecf0f1;
+        }
+
+        tr:hover {
+            background-color: #f8f9fa;
+        }
+
+        .status-active {
+            display: inline-block;
+            padding: 4px 8px;
+            background-color: #d4edda;
+            color: #155724;
+            border-radius: 3px;
+            font-size: 12px;
+        }
+
+        .status-inactive {
+            display: inline-block;
+            padding: 4px 8px;
+            background-color: #f8d7da;
+            color: #721c24;
+            border-radius: 3px;
+            font-size: 12px;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 5px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #7f8c8d;
+        }
+
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+
+        .modal-content {
+            background-color: #fff;
+            margin: 15% auto;
+            padding: 20px;
+            border-radius: 8px;
+            width: 80%;
+            max-width: 500px;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .close {
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover {
+            color: #e74c3c;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: bold;
+            color: #3498db;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>API 키 관리</h1>
+            <p>네이버 쇼핑 API 키를 관리합니다.</p>
+        </header>
+
+        <div id="message"></div>
+
+        <div class="stats" id="stats">
+            <div class="stat-card">
+                <div class="stat-value" id="totalKeys">0</div>
+                <div class="stat-label">전체 키</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="activeKeys">0</div>
+                <div class="stat-label">활성 키</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="inactiveKeys">0</div>
+                <div class="stat-label">비활성 키</div>
+            </div>
+        </div>
+
+        <div class="add-key-form">
+            <h2>새 API 키 추가</h2>
+            <form id="addKeyForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="provider">Provider</label>
+                        <select id="provider" name="provider" required>
+                            <option value="naver_shopping">네이버 쇼핑</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="description">설명</label>
+                        <input type="text" id="description" name="description" placeholder="API 키 설명 (선택사항)">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="client_id">Client ID</label>
+                        <input type="text" id="client_id" name="client_id" required placeholder="네이버 API Client ID">
+                    </div>
+                    <div class="form-group">
+                        <label for="client_secret">Client Secret</label>
+                        <input type="text" id="client_secret" name="client_secret" required placeholder="네이버 API Client Secret">
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary">추가하기</button>
+                <button type="button" class="btn btn-secondary" onclick="validateNewKey()">검증하기</button>
+            </form>
+        </div>
+
+        <div class="keys-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Provider</th>
+                        <th>Client ID</th>
+                        <th>Client Secret</th>
+                        <th>설명</th>
+                        <th>상태</th>
+                        <th>사용 횟수</th>
+                        <th>마지막 사용</th>
+                        <th>액션</th>
+                    </tr>
+                </thead>
+                <tbody id="keysTableBody">
+                    <tr>
+                        <td colspan="8" class="loading">API 키를 불러오는 중...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>API 키 수정</h2>
+                <span class="close">&times;</span>
+            </div>
+            <form id="editKeyForm">
+                <input type="hidden" id="editKeyId">
+                <div class="form-group">
+                    <label for="editClientId">Client ID</label>
+                    <input type="text" id="editClientId" required>
+                </div>
+                <div class="form-group">
+                    <label for="editClientSecret">Client Secret</label>
+                    <input type="text" id="editClientSecret" required>
+                </div>
+                <div class="form-group">
+                    <label for="editDescription">설명</label>
+                    <textarea id="editDescription"></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">저장</button>
+                <button type="button" class="btn btn-secondary" onclick="closeEditModal()">취소</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = window.location.origin;
+        let allKeys = [];
+
+        // Load API keys
+        async function loadKeys() {
+            try {
+                const response = await fetch(`${API_BASE}/api/keys`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    allKeys = data.data;
+                    renderKeys();
+                    updateStats();
+                } else {
+                    showMessage('API 키를 불러오는데 실패했습니다.', 'error');
+                }
+            } catch (error) {
+                console.error('Error loading keys:', error);
+                showMessage('API 키를 불러오는데 실패했습니다.', 'error');
+            }
+        }
+
+        // Render keys table
+        function renderKeys() {
+            const tbody = document.getElementById('keysTableBody');
+            
+            if (allKeys.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" class="loading">등록된 API 키가 없습니다.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = allKeys.map(key => `
+                <tr>
+                    <td>${key.provider}</td>
+                    <td>${key.client_id}</td>
+                    <td>${key.client_secret}</td>
+                    <td>${key.description || '-'}</td>
+                    <td>
+                        <span class="${key.is_active ? 'status-active' : 'status-inactive'}">
+                            ${key.is_active ? '활성' : '비활성'}
+                        </span>
+                    </td>
+                    <td>${key.usage_count || 0}</td>
+                    <td>${key.last_used_at ? new Date(key.last_used_at).toLocaleString() : '-'}</td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="btn btn-secondary" onclick="toggleKey('${key.id}')">
+                                ${key.is_active ? '비활성화' : '활성화'}
+                            </button>
+                            <button class="btn btn-primary" onclick="editKey('${key.id}')">수정</button>
+                            <button class="btn btn-danger" onclick="deleteKey('${key.id}')">삭제</button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // Update statistics
+        function updateStats() {
+            const totalKeys = allKeys.length;
+            const activeKeys = allKeys.filter(k => k.is_active).length;
+            const inactiveKeys = totalKeys - activeKeys;
+
+            document.getElementById('totalKeys').textContent = totalKeys;
+            document.getElementById('activeKeys').textContent = activeKeys;
+            document.getElementById('inactiveKeys').textContent = inactiveKeys;
+        }
+
+        // Add new key
+        document.getElementById('addKeyForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const keyData = Object.fromEntries(formData);
+
+            // 먼저 검증
+            showMessage('API 키를 검증하고 있습니다...', 'success');
+            
+            try {
+                // 검증 API 호출
+                const validateResponse = await fetch(`${API_BASE}/api/keys/validate`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        provider: keyData.provider,
+                        client_id: keyData.client_id,
+                        client_secret: keyData.client_secret
+                    })
+                });
+
+                const validateData = await validateResponse.json();
+                
+                if (!validateData.success || !validateData.valid) {
+                    showMessage('API 키가 유효하지 않습니다. 키를 확인해주세요.', 'error');
+                    return;
+                }
+
+                // 검증 성공 후 저장
+                const response = await fetch(`${API_BASE}/api/keys`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(keyData)
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    showMessage('API 키가 성공적으로 추가되었습니다.', 'success');
+                    e.target.reset();
+                    loadKeys();
+                } else {
+                    showMessage(data.error || '키 추가에 실패했습니다.', 'error');
+                }
+            } catch (error) {
+                console.error('Error adding key:', error);
+                showMessage('키 추가에 실패했습니다.', 'error');
+            }
+        });
+
+        // Validate new key
+        async function validateNewKey() {
+            const provider = document.getElementById('provider').value;
+            const client_id = document.getElementById('client_id').value;
+            const client_secret = document.getElementById('client_secret').value;
+
+            if (!client_id || !client_secret) {
+                showMessage('Client ID와 Client Secret을 입력해주세요.', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/api/keys/validate`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ provider, client_id, client_secret })
+                });
+
+                const data = await response.json();
+                
+                if (data.success && data.valid) {
+                    showMessage('API 키가 유효합니다!', 'success');
+                } else {
+                    showMessage('API 키가 유효하지 않습니다.', 'error');
+                }
+            } catch (error) {
+                console.error('Error validating key:', error);
+                showMessage('키 검증에 실패했습니다.', 'error');
+            }
+        }
+
+        // Toggle key status
+        async function toggleKey(id) {
+            try {
+                const response = await fetch(`${API_BASE}/api/keys/${id}/toggle`, {
+                    method: 'PATCH'
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    showMessage('키 상태가 변경되었습니다.', 'success');
+                    loadKeys();
+                } else {
+                    showMessage(data.error || '상태 변경에 실패했습니다.', 'error');
+                }
+            } catch (error) {
+                console.error('Error toggling key:', error);
+                showMessage('상태 변경에 실패했습니다.', 'error');
+            }
+        }
+
+        // Delete key
+        async function deleteKey(id) {
+            if (!confirm('정말로 이 API 키를 삭제하시겠습니까?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/api/keys/${id}`, {
+                    method: 'DELETE'
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    showMessage('API 키가 삭제되었습니다.', 'success');
+                    loadKeys();
+                } else {
+                    showMessage(data.error || '키 삭제에 실패했습니다.', 'error');
+                }
+            } catch (error) {
+                console.error('Error deleting key:', error);
+                showMessage('키 삭제에 실패했습니다.', 'error');
+            }
+        }
+
+        // Edit key
+        function editKey(id) {
+            const key = allKeys.find(k => k.id === id);
+            if (!key) return;
+
+            document.getElementById('editKeyId').value = key.id;
+            document.getElementById('editClientId').value = key.client_id;
+            document.getElementById('editClientSecret').value = key.client_secret.replace('****', '');
+            document.getElementById('editDescription').value = key.description || '';
+
+            document.getElementById('editModal').style.display = 'block';
+        }
+
+        // Close edit modal
+        function closeEditModal() {
+            document.getElementById('editModal').style.display = 'none';
+        }
+
+        // Handle edit form submission
+        document.getElementById('editKeyForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const id = document.getElementById('editKeyId').value;
+            const updates = {
+                client_id: document.getElementById('editClientId').value,
+                client_secret: document.getElementById('editClientSecret').value,
+                description: document.getElementById('editDescription').value
+            };
+
+            try {
+                const response = await fetch(`${API_BASE}/api/keys/${id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(updates)
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    showMessage('API 키가 수정되었습니다.', 'success');
+                    closeEditModal();
+                    loadKeys();
+                } else {
+                    showMessage(data.error || '키 수정에 실패했습니다.', 'error');
+                }
+            } catch (error) {
+                console.error('Error updating key:', error);
+                showMessage('키 수정에 실패했습니다.', 'error');
+            }
+        });
+
+        // Show message
+        function showMessage(text, type) {
+            const messageDiv = document.getElementById('message');
+            messageDiv.className = type;
+            messageDiv.textContent = text;
+            messageDiv.style.display = 'block';
+            
+            setTimeout(() => {
+                messageDiv.style.display = 'none';
+            }, 5000);
+        }
+
+        // Modal close button
+        document.querySelector('.close').addEventListener('click', closeEditModal);
+
+        // Click outside modal to close
+        window.addEventListener('click', (e) => {
+            if (e.target === document.getElementById('editModal')) {
+                closeEditModal();
+            }
+        });
+
+        // Load keys on page load
+        loadKeys();
+        
+        // Reload keys every 30 seconds
+        setInterval(loadKeys, 30000);
+    </script>
+</body>
+</html>
