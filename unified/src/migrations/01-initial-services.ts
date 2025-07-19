@@ -21,10 +21,9 @@ async function createInitialServices() {
       INSERT INTO unified_services (
         service_id, service_code, service_name, service_url,
         db_type, connection_config, sync_config, field_mappings, is_active
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      ) VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, $8)
       RETURNING *
     `, [
-      'svc_mkt_guide_' + Date.now(),
       'mkt-guide',
       'MKT Guide (Supabase)',
       'https://mkt-guide.com',
@@ -56,10 +55,9 @@ async function createInitialServices() {
       INSERT INTO unified_services (
         service_id, service_code, service_name, service_url,
         db_type, connection_config, sync_config, field_mappings, is_active
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      ) VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, $8)
       RETURNING *
     `, [
-      'svc_top_re_' + Date.now(),
       'top-re',
       'TOP.RE.KR (MySQL)',
       'https://top.re.kr',

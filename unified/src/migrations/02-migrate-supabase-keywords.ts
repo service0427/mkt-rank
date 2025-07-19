@@ -63,11 +63,11 @@ async function migrateSupabaseKeywords(serviceId?: string) {
           try {
             await client.query(`
               INSERT INTO unified_search_keywords (
-                keyword_id, keyword, service_id, is_active,
+                id, keyword, service_id, is_active,
                 pc_count, mobile_count, total_count,
                 pc_ratio, mobile_ratio, type, user_id, metadata,
                 created_at, updated_at
-              ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+              ) VALUES ($1::uuid, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
               ON CONFLICT (keyword, service_id, type) 
               DO UPDATE SET
                 is_active = EXCLUDED.is_active,
@@ -79,7 +79,7 @@ async function migrateSupabaseKeywords(serviceId?: string) {
                 metadata = EXCLUDED.metadata,
                 updated_at = EXCLUDED.updated_at
             `, [
-              `kw_supabase_${keyword.id}`,
+              keyword.id, // 기존 Supabase UUID를 그대로 사용
               keyword.keyword,
               serviceId,
               keyword.active,
@@ -91,7 +91,6 @@ async function migrateSupabaseKeywords(serviceId?: string) {
               'shopping',
               keyword.user_id || null,
               JSON.stringify({
-                original_id: keyword.id,
                 source: 'supabase',
                 migrated_at: new Date()
               }),
