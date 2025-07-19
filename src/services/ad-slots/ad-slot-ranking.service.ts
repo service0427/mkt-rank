@@ -1,4 +1,6 @@
 import { Pool } from 'pg';
+import { promises as fs } from 'fs';
+import path from 'path';
 import { AdSlot, AdSlotRanking, RankingUpdateResult } from '../../types/ad-slots.types';
 import { SearchResult } from '../../types';
 import { NaverShoppingProvider } from '../../providers/naver-shopping.provider';
@@ -59,22 +61,63 @@ export class AdSlotRankingService {
         
         const searchResponse = await this.searchProvider.search(adSlot.work_keyword, page);
         
-        // 첫 페이지 첫 번째 상품 상세 로그
+        // 첫 페이지 API 응답을 파일로 저장
         if (page === 1 && searchResponse.results.length > 0) {
-          console.log('=== API RESPONSE SAMPLE ===');
-          console.log(`Keyword: ${adSlot.work_keyword}`);
-          console.log(`Ad Slot ID: ${adSlot.ad_slot_id}`);
-          console.log(`Searching for - Price MID: ${adSlot.price_compare_mid}, Product MID: ${adSlot.product_mid}, Seller: ${adSlot.seller_mid}`);
-          console.log(`Total Results: ${searchResponse.results.length}`);
-          console.log('\nFirst Item Full Data:', JSON.stringify(searchResponse.results[0], null, 2));
-          console.log('\nFirst 5 Items Summary:', searchResponse.results.slice(0, 5).map((item: any) => ({
-            productId: item.productId,
-            title: item.title,
-            mallName: item.mallName,
-            lprice: item.lprice,
-            link: item.link
-          })));
-          console.log('=========================\n');
+          const responseData = {
+            timestamp: new Date().toISOString(),
+            adSlotId: adSlot.ad_slot_id,
+            keyword: adSlot.work_keyword,
+            searchingFor: {
+              price_compare_mid: adSlot.price_compare_mid,
+              product_mid: adSlot.product_mid,
+              seller_mid: adSlot.seller_mid
+            },
+            totalResults: searchResponse.results.length,
+            // 전체 응답 구조
+            fullResponse: searchResponse,
+            // 첫 번째 아이템 상세
+            firstItemDetail: searchResponse.results[0],
+            // 첫 5개 아이템 요약
+            first5Items: searchResponse.results.slice(0, 5).map((item: any, index: number) => ({
+              순위: index + 1,
+              ...item
+            })),
+            // 필드 설명
+            fieldDescriptions: {
+              productId: "네이버 쇼핑 상품 ID (MID)",
+              title: "상품명",
+              link: "상품 상세 페이지 URL",
+              image: "상품 이미지 URL",
+              lprice: "최저가 (원)",
+              hprice: "최고가 (원)",
+              mallName: "판매처 이름",
+              productType: "상품 타입 (1:일반상품, 2:가격비교상품, 3:중고상품, 4:단종상품, 5:미등록상품, 6:종료상품, 7:가격비교불가상품)",
+              brand: "브랜드",
+              maker: "제조사",
+              category1: "대분류",
+              category2: "중분류", 
+              category3: "소분류",
+              category4: "세분류"
+            }
+          };
+          
+          try {
+            const logDir = path.join(process.cwd(), 'api_response_logs');
+            await fs.mkdir(logDir, { recursive: true });
+            
+            const fileName = `ad_slot_${adSlot.ad_slot_id}_${adSlot.work_keyword.replace(/[^가-힣a-zA-Z0-9]/g, '_')}_${Date.now()}.json`;
+            const filePath = path.join(logDir, fileName);
+            
+            await fs.writeFile(filePath, JSON.stringify(responseData, null, 2), 'utf8');
+            logger.info(`API response saved to: ${filePath}`);
+            console.log(`\n=== API RESPONSE SAVED ===`);
+            console.log(`File: ${filePath}`);
+            console.log(`Keyword: ${adSlot.work_keyword}`);
+            console.log(`Total Results: ${searchResponse.results.length}`);
+            console.log(`==========================\n`);
+          } catch (error) {
+            logger.error('Failed to save API response:', error);
+          }
         }
         
         allResults.push(...searchResponse.results);
