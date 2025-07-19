@@ -12,6 +12,7 @@ import { keywordsRouter } from './routes/keywords.routes';
 import { syncRouter } from './routes/sync.routes';
 import { rankingsRouter } from './routes/rankings.routes';
 import { statsRouter } from './routes/stats.routes';
+import { apiKeysRouter } from './routes/api-keys.routes';
 import { webRouter } from './routes/web.routes';
 
 // Load environment variables
@@ -56,6 +57,7 @@ app.use('/api/keywords', keywordsRouter);
 app.use('/api/sync', syncRouter);
 app.use('/api/rankings', rankingsRouter);
 app.use('/api/stats', statsRouter);
+app.use('/api/keys', apiKeysRouter);
 
 // Web Routes (UI pages)
 app.use('/', webRouter);

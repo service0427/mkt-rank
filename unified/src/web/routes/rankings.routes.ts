@@ -3,33 +3,46 @@ import { Router, Request, Response } from 'express';
 
 const router = Router();
 
-// GET /api/rankings/current - Get current rankings
-router.get('/current', async (_req: Request, res: Response) => {
+// GET /api/rankings - Get rankings with filters
+router.get('/', async (_req: Request, res: Response) => {
   try {
-    // TODO: Implement current rankings
-    res.json({ success: true, data: [] });
+    // const { platform, service_id, keyword } = req.query;
+    
+    // Mock data for now
+    const rankings: any[] = [];
+    
+    res.json({ success: true, data: rankings });
   } catch (error) {
-    res.status(500).json({ success: false, error: 'Failed to fetch current rankings' });
+    res.status(500).json({ success: false, error: 'Failed to fetch rankings' });
   }
 });
 
 // GET /api/rankings/history - Get ranking history
 router.get('/history', async (_req: Request, res: Response) => {
   try {
-    // TODO: Implement ranking history
-    res.json({ success: true, data: [] });
+    // const { keyword_id, days = 7 } = req.query;
+    
+    // Mock data
+    const history: any[] = [];
+    
+    res.json({ success: true, data: history });
   } catch (error) {
     res.status(500).json({ success: false, error: 'Failed to fetch ranking history' });
   }
 });
 
-// GET /api/rankings/compare - Compare rankings between services
-router.get('/compare', async (_req: Request, res: Response) => {
+// POST /api/rankings/collect - Trigger ranking collection
+router.post('/collect', async (_req: Request, res: Response) => {
   try {
-    // TODO: Implement ranking comparison
-    res.json({ success: true, data: {} });
+    // const { service_id, keyword_ids } = req.body;
+    
+    res.json({ 
+      success: true, 
+      message: 'Ranking collection started',
+      job_id: `job_${Date.now()}`
+    });
   } catch (error) {
-    res.status(500).json({ success: false, error: 'Failed to compare rankings' });
+    res.status(500).json({ success: false, error: 'Failed to start ranking collection' });
   }
 });
 

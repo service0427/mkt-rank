@@ -6,8 +6,14 @@ const router = Router();
 // GET /api/sync/status - Get sync status
 router.get('/status', async (_req: Request, res: Response) => {
   try {
-    // TODO: Implement sync status
-    res.json({ success: true, data: { status: 'idle' } });
+    const status = {
+      activeJobs: 0,
+      completedToday: 0,
+      failedToday: 0,
+      nextSync: new Date(Date.now() + 15 * 60 * 1000), // 15분 후
+      status: 'idle'
+    };
+    res.json({ success: true, data: status });
   } catch (error) {
     res.status(500).json({ success: false, error: 'Failed to fetch sync status' });
   }
