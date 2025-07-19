@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>순위 모니터 - 통합 시스템</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f5f5f7;
+            color: #1d1d1f;
+        }
+        
+        .header {
+            background-color: #fff;
+            border-bottom: 1px solid #e5e5e7;
+            padding: 1rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .nav {
+            display: flex;
+            gap: 2rem;
+            margin-top: 1rem;
+        }
+        
+        .nav a {
+            color: #06c;
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            transition: background-color 0.2s;
+        }
+        
+        .nav a:hover, .nav a.active {
+            background-color: #f5f5f7;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+        
+        .filters {
+            background: #fff;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        
+        .filter-select {
+            padding: 0.75rem;
+            border: 1px solid #e5e5e7;
+            border-radius: 8px;
+            font-size: 1rem;
+            min-width: 150px;
+        }
+        
+        .search-input {
+            flex: 1;
+            min-width: 200px;
+            padding: 0.75rem;
+            border: 1px solid #e5e5e7;
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+        
+        .btn {
+            background-color: #06c;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        .btn:hover {
+            background-color: #0051a8;
+        }
+        
+        .rankings-grid {
+            display: grid;
+            gap: 1.5rem;
+        }
+        
+        .ranking-card {
+            background: #fff;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .ranking-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        
+        .keyword-name {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+        
+        .platform-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 16px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        
+        .platform-naver {
+            background-color: #03cf5d;
+            color: white;
+        }
+        
+        .platform-coupang {
+            background-color: #ff5b5c;
+            color: white;
+        }
+        
+        .ranking-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .info-item {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .info-label {
+            color: #6e6e73;
+            font-size: 0.875rem;
+            margin-bottom: 0.25rem;
+        }
+        
+        .info-value {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+        
+        .rank-change {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            font-size: 0.875rem;
+            margin-left: 0.5rem;
+        }
+        
+        .rank-up {
+            color: #10b981;
+        }
+        
+        .rank-down {
+            color: #ef4444;
+        }
+        
+        .rank-same {
+            color: #6e6e73;
+        }
+        
+        .chart-container {
+            height: 200px;
+            margin-top: 1rem;
+            border: 1px solid #e5e5e7;
+            border-radius: 8px;
+            padding: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #6e6e73;
+        }
+        
+        .no-data {
+            text-align: center;
+            color: #6e6e73;
+            padding: 3rem;
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <h1>순위 모니터</h1>
+        <nav class="nav">
+            <a href="/">대시보드</a>
+            <a href="/services">서비스 관리</a>
+            <a href="/keywords">키워드 검색</a>
+            <a href="/sync">동기화</a>
+            <a href="/rankings" class="active">순위 모니터</a>
+            <a href="/api-keys">API 키</a>
+            <a href="/settings">설정</a>
+        </nav>
+    </header>
+
+    <div class="container">
+        <div class="filters">
+            <select class="filter-select" id="platformFilter">
+                <option value="">모든 플랫폼</option>
+                <option value="naver_shopping">네이버 쇼핑</option>
+                <option value="coupang">쿠팡</option>
+            </select>
+            <select class="filter-select" id="serviceFilter">
+                <option value="">모든 서비스</option>
+            </select>
+            <input type="text" class="search-input" id="keywordSearch" placeholder="키워드 검색...">
+            <button class="btn" onclick="searchRankings()">검색</button>
+        </div>
+
+        <div class="rankings-grid" id="rankingsGrid">
+            <div class="no-data">
+                순위 데이터를 로딩 중입니다...
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Load services for filter
+        async function loadServices() {
+            try {
+                const response = await fetch('/api/services');
+                const data = await response.json();
+                
+                if (data.success) {
+                    const select = document.getElementById('serviceFilter');
+                    data.data.forEach(service => {
+                        const option = document.createElement('option');
+                        option.value = service.service_id;
+                        option.textContent = service.service_name;
+                        select.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('서비스 로드 실패:', error);
+            }
+        }
+
+        // Search rankings
+        async function searchRankings() {
+            const params = new URLSearchParams({
+                platform: document.getElementById('platformFilter').value,
+                service_id: document.getElementById('serviceFilter').value,
+                keyword: document.getElementById('keywordSearch').value
+            });
+
+            try {
+                const response = await fetch(`/api/rankings?${params}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayRankings(data.data);
+                }
+            } catch (error) {
+                console.error('순위 검색 실패:', error);
+                displayRankings([]);
+            }
+        }
+
+        function displayRankings(rankings) {
+            const container = document.getElementById('rankingsGrid');
+            
+            if (!rankings || rankings.length === 0) {
+                container.innerHTML = '<div class="no-data">검색 결과가 없습니다</div>';
+                return;
+            }
+            
+            // Group rankings by keyword
+            const groupedRankings = groupRankingsByKeyword(rankings);
+            
+            container.innerHTML = Object.entries(groupedRankings).map(([keyword, data]) => `
+                <div class="ranking-card">
+                    <div class="ranking-header">
+                        <h3 class="keyword-name">${keyword}</h3>
+                        <span class="platform-badge platform-${data.platform === 'naver_shopping' ? 'naver' : 'coupang'}">
+                            ${data.platform === 'naver_shopping' ? '네이버' : '쿠팡'}
+                        </span>
+                    </div>
+                    <div class="ranking-info">
+                        <div class="info-item">
+                            <span class="info-label">현재 순위</span>
+                            <span class="info-value">
+                                ${data.current_rank || '-'}
+                                ${renderRankChange(data.rank_change)}
+                            </span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">이전 순위</span>
+                            <span class="info-value">${data.previous_rank || '-'}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">최고 순위</span>
+                            <span class="info-value">${data.best_rank || '-'}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">평균 순위</span>
+                            <span class="info-value">${data.avg_rank ? data.avg_rank.toFixed(1) : '-'}</span>
+                        </div>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">마지막 수집</span>
+                        <span style="font-size: 0.875rem;">${formatDate(data.collected_at)}</span>
+                    </div>
+                    <div class="chart-container">
+                        순위 차트 (구현 예정)
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function groupRankingsByKeyword(rankings) {
+            const grouped = {};
+            rankings.forEach(ranking => {
+                if (!grouped[ranking.keyword]) {
+                    grouped[ranking.keyword] = {
+                        platform: ranking.platform,
+                        current_rank: ranking.rank,
+                        previous_rank: ranking.previous_rank,
+                        rank_change: ranking.rank_change,
+                        best_rank: ranking.rank,
+                        avg_rank: ranking.rank,
+                        collected_at: ranking.collected_at
+                    };
+                }
+            });
+            return grouped;
+        }
+
+        function renderRankChange(change) {
+            if (!change || change === 0) {
+                return '<span class="rank-change rank-same">-</span>';
+            }
+            if (change > 0) {
+                return `<span class="rank-change rank-down">▼ ${change}</span>`;
+            }
+            return `<span class="rank-change rank-up">▲ ${Math.abs(change)}</span>`;
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return '-';
+            const date = new Date(dateString);
+            const now = new Date();
+            const diff = now - date;
+            
+            if (diff < 60000) return '방금 전';
+            if (diff < 3600000) return Math.floor(diff / 60000) + '분 전';
+            if (diff < 86400000) return Math.floor(diff / 3600000) + '시간 전';
+            
+            return date.toLocaleDateString('ko-KR');
+        }
+
+        // Initialize
+        loadServices();
+        searchRankings();
+    </script>
+</body>
+</html>

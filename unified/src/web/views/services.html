@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Service Management - Unified System</title>
+    <title>서비스 관리 - 통합 시스템</title>
     <style>
         * {
             margin: 0;
@@ -228,22 +228,22 @@
 </head>
 <body>
     <header class="header">
-        <h1>Service Management</h1>
+        <h1>서비스 관리</h1>
         <nav class="nav">
-            <a href="/">Dashboard</a>
-            <a href="/services" class="active">Services</a>
-            <a href="/keywords">Keywords</a>
-            <a href="/sync">Sync</a>
-            <a href="/rankings">Rankings</a>
-            <a href="/api-keys">API Keys</a>
-            <a href="/settings">Settings</a>
+            <a href="/">대시보드</a>
+            <a href="/services" class="active">서비스</a>
+            <a href="/keywords">키워드</a>
+            <a href="/sync">동기화</a>
+            <a href="/rankings">순위</a>
+            <a href="/api-keys">API 키</a>
+            <a href="/settings">설정</a>
         </nav>
     </header>
 
     <div class="container">
         <div class="actions">
-            <h2>Registered Services</h2>
-            <button class="btn" onclick="openAddServiceModal()">Add New Service</button>
+            <h2>등록된 서비스</h2>
+            <button class="btn" onclick="openAddServiceModal()">새 서비스 추가</button>
         </div>
 
         <div id="servicesList">
@@ -255,30 +255,30 @@
     <div id="addServiceModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2>Add New Service</h2>
+                <h2>새 서비스 추가</h2>
                 <span class="close" onclick="closeModal('addServiceModal')">&times;</span>
             </div>
             <form id="addServiceForm">
                 <div class="form-group">
-                    <label for="service_name">Service Name</label>
+                    <label for="service_name">서비스 이름</label>
                     <input type="text" id="service_name" name="service_name" required>
                 </div>
                 
                 <div class="form-group">
-                    <label for="service_code">Service Code</label>
+                    <label for="service_code">서비스 코드</label>
                     <input type="text" id="service_code" name="service_code" required 
-                           pattern="[a-z0-9-]+" title="Lowercase letters, numbers, and hyphens only">
+                           pattern="[a-z0-9-]+" title="소문자, 숫자, 하이픈만 사용 가능">
                 </div>
                 
                 <div class="form-group">
-                    <label for="service_url">Service URL</label>
+                    <label for="service_url">서비스 URL</label>
                     <input type="url" id="service_url" name="service_url" required>
                 </div>
                 
                 <div class="form-group">
-                    <label for="db_type">Database Type</label>
+                    <label for="db_type">데이터베이스 유형</label>
                     <select id="db_type" name="db_type" required onchange="updateConnectionFields()">
-                        <option value="">Select Type</option>
+                        <option value="">유형 선택</option>
                         <option value="supabase">Supabase</option>
                         <option value="mysql">MySQL</option>
                         <option value="postgresql">PostgreSQL</option>
@@ -290,8 +290,8 @@
                 </div>
                 
                 <div class="form-actions">
-                    <button type="button" class="btn btn-secondary" onclick="testConnection()">Test Connection</button>
-                    <button type="submit" class="btn">Save Service</button>
+                    <button type="button" class="btn btn-secondary" onclick="testConnection()">연결 테스트</button>
+                    <button type="submit" class="btn">서비스 저장</button>
                 </div>
             </form>
         </div>
@@ -310,7 +310,7 @@
                     displayServices(data.data);
                 }
             } catch (error) {
-                console.error('Failed to load services:', error);
+                console.error('서비스 로드 실패:', error);
             }
         }
         
@@ -318,7 +318,7 @@
             const container = document.getElementById('servicesList');
             
             if (services.length === 0) {
-                container.innerHTML = '<div class="section"><p style="text-align: center; color: #6e6e73;">No services registered yet.</p></div>';
+                container.innerHTML = '<div class="section"><p style="text-align: center; color: #6e6e73;">아직 등록된 서비스가 없습니다.</p></div>';
                 return;
             }
             
@@ -327,7 +327,7 @@
                     <div class="service-header">
                         <h3 class="service-title">${service.service_name}</h3>
                         <span class="status-badge ${service.is_active ? 'status-active' : 'status-inactive'}">
-                            ${service.is_active ? 'Active' : 'Inactive'}
+                            ${service.is_active ? '활성' : '비활성'}
                         </span>
                     </div>
                     <div class="service-info">
@@ -336,23 +336,23 @@
                             <span class="info-value"><a href="${service.service_url}" target="_blank">${service.service_url}</a></span>
                         </div>
                         <div class="info-item">
-                            <span class="info-label">Database Type</span>
+                            <span class="info-label">데이터베이스 유형</span>
                             <span class="info-value">${service.db_type}</span>
                         </div>
                         <div class="info-item">
-                            <span class="info-label">Keywords</span>
+                            <span class="info-label">키워드</span>
                             <span class="info-value">${service.keyword_count || 0}</span>
                         </div>
                         <div class="info-item">
-                            <span class="info-label">Last Sync</span>
+                            <span class="info-label">마지막 동기화</span>
                             <span class="info-value">${formatDate(service.last_sync)}</span>
                         </div>
                     </div>
                     <div class="service-actions">
-                        <button class="btn btn-small" onclick="syncService('${service.service_id}')">Sync Now</button>
-                        <button class="btn btn-small btn-secondary" onclick="editService('${service.service_id}')">Edit</button>
+                        <button class="btn btn-small" onclick="syncService('${service.service_id}')">지금 동기화</button>
+                        <button class="btn btn-small btn-secondary" onclick="editService('${service.service_id}')">편집</button>
                         <button class="btn btn-small btn-secondary" onclick="toggleService('${service.service_id}', ${service.is_active})">
-                            ${service.is_active ? 'Deactivate' : 'Activate'}
+                            ${service.is_active ? '비활성화' : '활성화'}
                         </button>
                     </div>
                 </div>
@@ -385,30 +385,30 @@
                         <input type="url" id="supabase_url" name="supabase_url" required>
                     </div>
                     <div class="form-group">
-                        <label for="supabase_key">Supabase Anon Key</label>
+                        <label for="supabase_key">Supabase Anon 키</label>
                         <input type="text" id="supabase_key" name="supabase_key" required>
                     </div>
                 `;
             } else if (dbType === 'mysql' || dbType === 'postgresql') {
                 fields = `
                     <div class="form-group">
-                        <label for="db_host">Host</label>
+                        <label for="db_host">호스트</label>
                         <input type="text" id="db_host" name="db_host" required>
                     </div>
                     <div class="form-group">
-                        <label for="db_port">Port</label>
+                        <label for="db_port">포트</label>
                         <input type="number" id="db_port" name="db_port" required value="${dbType === 'mysql' ? 3306 : 5432}">
                     </div>
                     <div class="form-group">
-                        <label for="db_database">Database</label>
+                        <label for="db_database">데이터베이스</label>
                         <input type="text" id="db_database" name="db_database" required>
                     </div>
                     <div class="form-group">
-                        <label for="db_user">User</label>
+                        <label for="db_user">사용자</label>
                         <input type="text" id="db_user" name="db_user" required>
                     </div>
                     <div class="form-group">
-                        <label for="db_password">Password</label>
+                        <label for="db_password">비밀번호</label>
                         <input type="password" id="db_password" name="db_password" required>
                     </div>
                 `;
@@ -440,9 +440,9 @@
                 });
                 
                 const result = await response.json();
-                alert(result.success ? 'Connection successful!' : 'Connection failed: ' + result.error);
+                alert(result.success ? '연결 성공!' : '연결 실패: ' + result.error);
             } catch (error) {
-                alert('Connection test failed: ' + error.message);
+                alert('연결 테스트 실패: ' + error.message);
             }
         }
         
@@ -482,19 +482,19 @@
                 const result = await response.json();
                 
                 if (result.success) {
-                    alert('Service added successfully!');
+                    alert('서비스가 성공적으로 추가되었습니다!');
                     closeModal('addServiceModal');
                     loadServices();
                 } else {
-                    alert('Failed to add service: ' + result.error);
+                    alert('서비스 추가 실패: ' + result.error);
                 }
             } catch (error) {
-                alert('Error adding service: ' + error.message);
+                alert('서비스 추가 오류: ' + error.message);
             }
         });
         
         async function syncService(serviceId) {
-            if (!confirm('Start sync for this service?')) return;
+            if (!confirm('이 서비스의 동기화를 시작하시겠습니까?')) return;
             
             try {
                 const response = await fetch(`/api/sync/trigger/${serviceId}`, {
@@ -502,14 +502,14 @@
                 });
                 
                 const result = await response.json();
-                alert(result.success ? 'Sync started!' : 'Sync failed: ' + result.error);
+                alert(result.success ? '동기화가 시작되었습니다!' : '동기화 실패: ' + result.error);
             } catch (error) {
-                alert('Error starting sync: ' + error.message);
+                alert('동기화 시작 오류: ' + error.message);
             }
         }
         
         function formatDate(dateString) {
-            if (!dateString) return 'Never';
+            if (!dateString) return '없음';
             return new Date(dateString).toLocaleString('ko-KR');
         }
         

@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API 키 관리 - 통합 시스템</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f5f5f7;
+            color: #1d1d1f;
+        }
+        
+        .header {
+            background-color: #fff;
+            border-bottom: 1px solid #e5e5e7;
+            padding: 1rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .nav {
+            display: flex;
+            gap: 2rem;
+            margin-top: 1rem;
+        }
+        
+        .nav a {
+            color: #06c;
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            transition: background-color 0.2s;
+        }
+        
+        .nav a:hover, .nav a.active {
+            background-color: #f5f5f7;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+        
+        .actions-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+        
+        .btn {
+            background-color: #06c;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        .btn:hover {
+            background-color: #0051a8;
+        }
+        
+        .btn-small {
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+        }
+        
+        .btn-danger {
+            background-color: #dc3545;
+        }
+        
+        .btn-danger:hover {
+            background-color: #c82333;
+        }
+        
+        .api-keys-list {
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .table th {
+            text-align: left;
+            padding: 1rem;
+            border-bottom: 2px solid #e5e5e7;
+            background-color: #f5f5f7;
+            font-weight: 500;
+            color: #6e6e73;
+        }
+        
+        .table td {
+            padding: 1rem;
+            border-bottom: 1px solid #e5e5e7;
+        }
+        
+        .key-value {
+            font-family: monospace;
+            background-color: #f5f5f7;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.875rem;
+        }
+        
+        .key-hidden {
+            filter: blur(5px);
+            user-select: none;
+        }
+        
+        .provider-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 16px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        
+        .provider-naver {
+            background-color: #03cf5d;
+            color: white;
+        }
+        
+        .provider-coupang {
+            background-color: #ff5b5c;
+            color: white;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 16px;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+        
+        .status-active {
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+        
+        .status-inactive {
+            background-color: #fee2e2;
+            color: #991b1b;
+        }
+        
+        .key-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+        
+        .modal-content {
+            background-color: #fff;
+            margin: 5% auto;
+            padding: 2rem;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 600px;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+        
+        .close {
+            font-size: 2rem;
+            font-weight: 300;
+            cursor: pointer;
+            color: #6e6e73;
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+        
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #e5e5e7;
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+        
+        .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+        
+        .form-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+        
+        .btn-secondary {
+            background-color: #6e6e73;
+        }
+        
+        .btn-secondary:hover {
+            background-color: #515154;
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <h1>API 키 관리</h1>
+        <nav class="nav">
+            <a href="/">대시보드</a>
+            <a href="/services">서비스 관리</a>
+            <a href="/keywords">키워드 검색</a>
+            <a href="/sync">동기화</a>
+            <a href="/rankings">순위 모니터</a>
+            <a href="/api-keys" class="active">API 키</a>
+            <a href="/settings">설정</a>
+        </nav>
+    </header>
+
+    <div class="container">
+        <div class="actions-bar">
+            <h2>API 키 목록</h2>
+            <button class="btn" onclick="openAddKeyModal()">새 API 키 추가</button>
+        </div>
+
+        <div class="api-keys-list">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>제공자</th>
+                        <th>Client ID</th>
+                        <th>Client Secret</th>
+                        <th>설명</th>
+                        <th>상태</th>
+                        <th>생성일</th>
+                        <th>작업</th>
+                    </tr>
+                </thead>
+                <tbody id="apiKeysTable">
+                    <tr>
+                        <td colspan="7" style="text-align: center; color: #6e6e73;">로딩 중...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Add API Key Modal -->
+    <div id="addKeyModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>새 API 키 추가</h2>
+                <span class="close" onclick="closeModal('addKeyModal')">&times;</span>
+            </div>
+            <form id="addKeyForm">
+                <div class="form-group">
+                    <label for="provider">제공자</label>
+                    <select id="provider" name="provider" required>
+                        <option value="">선택하세요</option>
+                        <option value="naver_shopping">네이버 쇼핑</option>
+                        <option value="coupang">쿠팡</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="client_id">Client ID</label>
+                    <input type="text" id="client_id" name="client_id" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="client_secret">Client Secret</label>
+                    <input type="password" id="client_secret" name="client_secret" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="description">설명</label>
+                    <textarea id="description" name="description" placeholder="이 API 키에 대한 설명을 입력하세요"></textarea>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="testApiKey()">연결 테스트</button>
+                    <button type="submit" class="btn">저장</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Load API keys
+        async function loadApiKeys() {
+            try {
+                const response = await fetch('/api/keys');
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayApiKeys(data.data || []);
+                } else {
+                    displayApiKeys([]);
+                }
+            } catch (error) {
+                console.error('API 키 로드 실패:', error);
+                displayApiKeys([]);
+            }
+        }
+
+        function displayApiKeys(keys) {
+            const tbody = document.getElementById('apiKeysTable');
+            
+            if (keys.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: #6e6e73;">등록된 API 키가 없습니다</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = keys.map(key => `
+                <tr>
+                    <td>
+                        <span class="provider-badge provider-${key.provider === 'naver_shopping' ? 'naver' : 'coupang'}">
+                            ${key.provider === 'naver_shopping' ? '네이버 쇼핑' : '쿠팡'}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="key-value">${key.client_id}</span>
+                    </td>
+                    <td>
+                        <span class="key-value key-hidden" id="secret-${key.id}">${key.client_secret || '••••••••'}</span>
+                        <button class="btn btn-small" onclick="toggleSecret('${key.id}')">보기</button>
+                    </td>
+                    <td>${key.description || '-'}</td>
+                    <td>
+                        <span class="status-badge status-${key.is_active ? 'active' : 'inactive'}">
+                            ${key.is_active ? '활성' : '비활성'}
+                        </span>
+                    </td>
+                    <td>${formatDate(key.created_at)}</td>
+                    <td>
+                        <div class="key-actions">
+                            <button class="btn btn-small" onclick="validateKey('${key.id}')">검증</button>
+                            <button class="btn btn-small btn-danger" onclick="deleteKey('${key.id}')">삭제</button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function openAddKeyModal() {
+            document.getElementById('addKeyModal').style.display = 'block';
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+
+        function toggleSecret(keyId) {
+            const element = document.getElementById(`secret-${keyId}`);
+            element.classList.toggle('key-hidden');
+        }
+
+        async function testApiKey() {
+            const provider = document.getElementById('provider').value;
+            const client_id = document.getElementById('client_id').value;
+            const client_secret = document.getElementById('client_secret').value;
+            
+            if (!provider || !client_id || !client_secret) {
+                alert('모든 필드를 입력해주세요');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/keys/validate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ provider, client_id, client_secret })
+                });
+                
+                const result = await response.json();
+                alert(result.success ? 'API 키 검증 성공!' : 'API 키 검증 실패: ' + result.error);
+            } catch (error) {
+                alert('검증 중 오류 발생: ' + error.message);
+            }
+        }
+
+        document.getElementById('addKeyForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const keyData = {
+                provider: formData.get('provider'),
+                client_id: formData.get('client_id'),
+                client_secret: formData.get('client_secret'),
+                description: formData.get('description')
+            };
+            
+            try {
+                const response = await fetch('/api/keys', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(keyData)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert('API 키가 성공적으로 추가되었습니다!');
+                    closeModal('addKeyModal');
+                    loadApiKeys();
+                } else {
+                    alert('API 키 추가 실패: ' + result.error);
+                }
+            } catch (error) {
+                alert('API 키 추가 오류: ' + error.message);
+            }
+        });
+
+        async function validateKey(keyId) {
+            try {
+                const response = await fetch(`/api/keys/${keyId}/validate`, {
+                    method: 'POST'
+                });
+                
+                const result = await response.json();
+                alert(result.success ? 'API 키가 유효합니다!' : 'API 키 검증 실패: ' + result.error);
+            } catch (error) {
+                alert('검증 중 오류 발생: ' + error.message);
+            }
+        }
+
+        async function deleteKey(keyId) {
+            if (!confirm('이 API 키를 삭제하시겠습니까?')) return;
+            
+            try {
+                const response = await fetch(`/api/keys/${keyId}`, {
+                    method: 'DELETE'
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert('API 키가 삭제되었습니다');
+                    loadApiKeys();
+                } else {
+                    alert('삭제 실패: ' + result.error);
+                }
+            } catch (error) {
+                alert('삭제 중 오류 발생: ' + error.message);
+            }
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return '-';
+            return new Date(dateString).toLocaleDateString('ko-KR');
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            if (event.target.className === 'modal') {
+                event.target.style.display = 'none';
+            }
+        }
+
+        // Load on page load
+        loadApiKeys();
+    </script>
+</body>
+</html>
