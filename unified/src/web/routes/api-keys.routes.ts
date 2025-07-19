@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { query, withTransaction } from '../../db/postgres';
+import { query } from '../../db/postgres';
 import crypto from 'crypto';
 import axios from 'axios';
 
@@ -10,7 +10,8 @@ const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || 'default-encryption-key-cha
 
 // 간단한 암호화/복호화 함수
 function encrypt(text: string): string {
-  const cipher = crypto.createCipher('aes-256-cbc', ENCRYPTION_KEY);
+  const algorithm = 'aes-256-ctr';
+  const cipher = crypto.createCipheriv(algorithm, crypto.scryptSync(ENCRYPTION_KEY, 'salt', 32), Buffer.alloc(16, 0));
   let encrypted = cipher.update(text, 'utf8', 'hex');
   encrypted += cipher.final('hex');
   return encrypted;
@@ -18,7 +19,8 @@ function encrypt(text: string): string {
 
 function decrypt(text: string): string {
   try {
-    const decipher = crypto.createDecipher('aes-256-cbc', ENCRYPTION_KEY);
+    const algorithm = 'aes-256-ctr';
+    const decipher = crypto.createDecipheriv(algorithm, crypto.scryptSync(ENCRYPTION_KEY, 'salt', 32), Buffer.alloc(16, 0));
     let decrypted = decipher.update(text, 'hex', 'utf8');
     decrypted += decipher.final('utf8');
     return decrypted;
@@ -29,7 +31,7 @@ function decrypt(text: string): string {
 }
 
 // API 키 목록 조회
-router.get('/', async (req: Request, res: Response) => {
+router.get('/', async (_req: Request, res: Response) => {
   try {
     const keys = await query(`
       SELECT 
@@ -66,10 +68,11 @@ router.post('/', async (req: Request, res: Response) => {
   const { provider, client_id, client_secret, description } = req.body;
 
   if (!provider || !client_id || !client_secret) {
-    return res.status(400).json({
+    res.status(400).json({
       success: false,
       error: '필수 필드가 누락되었습니다'
     });
+    return;
   }
 
   try {
@@ -80,10 +83,11 @@ router.post('/', async (req: Request, res: Response) => {
     `, [provider, client_id]);
 
     if (existing.length > 0) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         error: '이미 등록된 API 키입니다'
       });
+      return;
     }
 
     // 암호화하여 저장
@@ -117,10 +121,11 @@ router.post('/validate', async (req: Request, res: Response) => {
   const { provider, client_id, client_secret } = req.body;
 
   if (!provider || !client_id || !client_secret) {
-    return res.status(400).json({
+    res.status(400).json({
       success: false,
       error: '필수 필드가 누락되었습니다'
     });
+    return;
   }
 
   try {
@@ -171,10 +176,11 @@ router.post('/:id/validate', async (req: Request, res: Response) => {
     `, [id]);
 
     if (!key) {
-      return res.status(404).json({
+      res.status(404).json({
         success: false,
         error: 'API 키를 찾을 수 없습니다'
       });
+      return;
     }
 
     const decryptedSecret = decrypt(key.client_secret);
@@ -209,10 +215,11 @@ router.delete('/:id', async (req: Request, res: Response) => {
     `, [id]);
 
     if (result.length === 0) {
-      return res.status(404).json({
+      res.status(404).json({
         success: false,
         error: 'API 키를 찾을 수 없습니다'
       });
+      return;
     }
 
     res.json({
