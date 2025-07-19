@@ -11,7 +11,10 @@
     "start:sync": "node dist/sync/worker.js",
     "start:collector": "node dist/collector/worker.js",
     "typecheck": "tsc --noEmit",
-    "migrate": "ts-node migrations/run.ts"
+    "migrate": "ts-node src/migrations/run-all.ts",
+    "migrate:services": "ts-node src/migrations/01-initial-services.ts",
+    "migrate:supabase": "ts-node src/migrations/02-migrate-supabase-keywords.ts",
+    "migrate:mysql": "ts-node src/migrations/03-migrate-mysql-keywords.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.39.1",
