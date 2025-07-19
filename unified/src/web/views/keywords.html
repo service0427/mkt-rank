@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Keyword Management - Unified System</title>
+    <title>키워드 검색 - 통합 시스템</title>
     <style>
         * {
             margin: 0;
@@ -176,65 +176,65 @@
 </head>
 <body>
     <header class="header">
-        <h1>Keyword Management</h1>
+        <h1>키워드 검색</h1>
         <nav class="nav">
-            <a href="/">Dashboard</a>
-            <a href="/services">Services</a>
-            <a href="/keywords" class="active">Keywords</a>
-            <a href="/sync">Sync</a>
-            <a href="/rankings">Rankings</a>
-            <a href="/api-keys">API Keys</a>
-            <a href="/settings">Settings</a>
+            <a href="/">대시보드</a>
+            <a href="/services">서비스 관리</a>
+            <a href="/keywords" class="active">키워드 검색</a>
+            <a href="/sync">동기화</a>
+            <a href="/rankings">순위 모니터</a>
+            <a href="/api-keys">API 키</a>
+            <a href="/settings">설정</a>
         </nav>
     </header>
 
     <div class="container">
         <div class="search-bar">
-            <input type="text" class="search-input" id="searchInput" placeholder="Search keywords...">
+            <input type="text" class="search-input" id="searchInput" placeholder="키워드 검색...">
             <select class="filter-select" id="serviceFilter">
-                <option value="">All Services</option>
+                <option value="">모든 서비스</option>
             </select>
             <select class="filter-select" id="typeFilter">
-                <option value="">All Types</option>
-                <option value="shopping">Shopping</option>
-                <option value="coupang">Coupang</option>
-                <option value="ad_slots">Ad Slots</option>
+                <option value="">모든 타입</option>
+                <option value="shopping">쇼핑</option>
+                <option value="coupang">쿠팡</option>
+                <option value="ad_slots">광고 슬롯</option>
             </select>
-            <button class="btn" onclick="searchKeywords()">Search</button>
+            <button class="btn" onclick="searchKeywords()">검색</button>
         </div>
 
         <div class="actions-bar">
             <div class="bulk-actions">
-                <button class="btn btn-secondary" onclick="exportKeywords()">Export CSV</button>
-                <button class="btn" onclick="importKeywords()">Import CSV</button>
+                <button class="btn btn-secondary" onclick="exportKeywords()">CSV 내보내기</button>
+                <button class="btn" onclick="importKeywords()">CSV 가져오기</button>
             </div>
-            <button class="btn" onclick="addKeyword()">Add Keyword</button>
+            <button class="btn" onclick="addKeyword()">키워드 추가</button>
         </div>
 
         <div class="keywords-table">
             <table class="table">
                 <thead>
                     <tr>
-                        <th>Keyword</th>
-                        <th>Service</th>
-                        <th>Type</th>
-                        <th>Search Volume</th>
-                        <th>Last Updated</th>
-                        <th>Actions</th>
+                        <th>키워드</th>
+                        <th>서비스</th>
+                        <th>타입</th>
+                        <th>검색량</th>
+                        <th>마지막 업데이트</th>
+                        <th>작업</th>
                     </tr>
                 </thead>
                 <tbody id="keywordsTableBody">
                     <tr>
-                        <td colspan="6" style="text-align: center; color: #6e6e73;">Loading...</td>
+                        <td colspan="6" style="text-align: center; color: #6e6e73;">로딩 중...</td>
                     </tr>
                 </tbody>
             </table>
         </div>
 
         <div class="pagination">
-            <button class="btn btn-secondary btn-small" onclick="previousPage()">Previous</button>
-            <span class="page-info" id="pageInfo">Page 1 of 1</span>
-            <button class="btn btn-secondary btn-small" onclick="nextPage()">Next</button>
+            <button class="btn btn-secondary btn-small" onclick="previousPage()">이전</button>
+            <span class="page-info" id="pageInfo">1 / 1 페이지</span>
+            <button class="btn btn-secondary btn-small" onclick="nextPage()">다음</button>
         </div>
     </div>
 
@@ -292,21 +292,21 @@
             const tbody = document.getElementById('keywordsTableBody');
             
             if (keywords.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #6e6e73;">No keywords found</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #6e6e73;">키워드가 없습니다</td></tr>';
                 return;
             }
             
             tbody.innerHTML = keywords.map(keyword => `
                 <tr>
                     <td><strong>${keyword.keyword}</strong></td>
-                    <td><span class="service-badge">${keyword.service_name || 'Unknown'}</span></td>
+                    <td><span class="service-badge">${keyword.service_name || '알 수 없음'}</span></td>
                     <td>${keyword.type || '-'}</td>
                     <td>${keyword.total_count ? keyword.total_count.toLocaleString() : '-'}</td>
                     <td>${formatDate(keyword.updated_at)}</td>
                     <td>
                         <div class="keyword-actions">
-                            <button class="btn btn-small btn-secondary" onclick="editKeyword('${keyword.id}')">Edit</button>
-                            <button class="btn btn-small btn-secondary" onclick="deleteKeyword('${keyword.id}')">Delete</button>
+                            <button class="btn btn-small btn-secondary" onclick="editKeyword('${keyword.id}')">수정</button>
+                            <button class="btn btn-small btn-secondary" onclick="deleteKeyword('${keyword.id}')">삭제</button>
                         </div>
                     </td>
                 </tr>
@@ -317,7 +317,7 @@
             if (pagination) {
                 currentPage = pagination.page;
                 totalPages = pagination.totalPages;
-                document.getElementById('pageInfo').textContent = `Page ${currentPage} of ${totalPages}`;
+                document.getElementById('pageInfo').textContent = `${currentPage} / ${totalPages} 페이지`;
             }
         }
 
@@ -340,16 +340,16 @@
 
         function addKeyword() {
             // TODO: Implement add keyword modal
-            alert('Add keyword feature coming soon');
+            alert('키워드 추가 기능은 공 준비중입니다');
         }
 
         function editKeyword(id) {
             // TODO: Implement edit keyword
-            alert('Edit keyword feature coming soon');
+            alert('키워드 수정 기능은 공 준비중입니다');
         }
 
         async function deleteKeyword(id) {
-            if (!confirm('Delete this keyword?')) return;
+            if (!confirm('이 키워드를 삭제하시겠습니까?')) return;
             
             try {
                 const response = await fetch(`/api/keywords/${id}`, {
@@ -360,7 +360,7 @@
                     searchKeywords(currentPage);
                 }
             } catch (error) {
-                alert('Failed to delete keyword');
+                alert('키워드 삭제 실패');
             }
         }
 
@@ -370,7 +370,7 @@
 
         function importKeywords() {
             // TODO: Implement import
-            alert('Import feature coming soon');
+            alert('가져오기 기능은 공 준비중입니다');
         }
 
         // Initialize
