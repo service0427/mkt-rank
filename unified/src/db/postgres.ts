@@ -4,7 +4,7 @@ import dotenv from 'dotenv';
 import path from 'path';
 
 // Load environment variables
-dotenv.config({ path: path.join(__dirname, '../../../.env') });
+dotenv.config({ path: path.join(__dirname, '../../.env') });
 
 // Create connection pool
 export const pgPool = new Pool({

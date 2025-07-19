@@ -4,10 +4,16 @@ import dotenv from 'dotenv';
 import path from 'path';
 
 // Load environment variables
-dotenv.config({ path: path.join(__dirname, '../../../.env') });
+dotenv.config({ path: path.join(__dirname, '../../.env') });
 
 async function createInitialServices() {
   console.log('Creating initial services...');
+  console.log('Database config:', {
+    host: process.env.LOCAL_PG_HOST,
+    port: process.env.LOCAL_PG_PORT,
+    database: process.env.LOCAL_PG_DATABASE,
+    user: process.env.LOCAL_PG_USER
+  });
   
   try {
     // 1. mkt-guide.com (Supabase) 서비스 생성

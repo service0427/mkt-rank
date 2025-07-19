@@ -5,7 +5,7 @@ import dotenv from 'dotenv';
 import path from 'path';
 
 // Load environment variables
-dotenv.config({ path: path.join(__dirname, '../../../.env') });
+dotenv.config({ path: path.join(__dirname, '../../.env') });
 
 async function migrateMySQLKeywords(serviceId?: string) {
   console.log('Starting MySQL ad_slots migration...');
