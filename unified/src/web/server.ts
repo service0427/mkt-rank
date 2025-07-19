@@ -7,13 +7,13 @@ import { createServer } from 'http';
 import rateLimit from 'express-rate-limit';
 
 // Import routes
-import { servicesRouter } from './routes/services.routes';
-import { keywordsRouter } from './routes/keywords.routes';
-import { syncRouter } from './routes/sync.routes';
-import { rankingsRouter } from './routes/rankings.routes';
-import { statsRouter } from './routes/stats.routes';
-import { apiKeysRouter } from './routes/api-keys.routes';
-import { webRouter } from './routes/web.routes';
+import servicesRouter from './routes/services.routes';
+import keywordsRouter from './routes/keywords.routes';
+import syncRouter from './routes/sync.routes';
+import rankingsRouter from './routes/rankings.routes';
+import statsRouter from './routes/stats.routes';
+import apiKeysRouter from './routes/api-keys.routes';
+import webRouter from './routes/web.routes';
 
 // Load environment variables
 dotenv.config({ path: path.join(__dirname, '../../../.env') });
