@@ -32,32 +32,39 @@ export async function getServiceById(id: string) {
   }
 }
 
-export async function createService(data: Partial<UnifiedService>) {
+export async function createService(data: any) {
   const serviceId = `svc_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   
   const [service] = await query<UnifiedService>(`
     INSERT INTO unified_services (
-      service_id, service_name, service_type, service_url,
-      database_config, sync_config, is_active
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7)
+      service_id, service_code, service_name, service_url,
+      db_type, connection_config, sync_config, field_mappings, is_active
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
     RETURNING *
   `, [
     serviceId,
+    data.service_code,
     data.service_name,
-    data.service_type,
     data.service_url,
-    JSON.stringify(data.database_config || {}),
-    JSON.stringify(data.sync_config || {}),
+    data.db_type,
+    JSON.stringify(data.connection_config || {}),
+    JSON.stringify(data.sync_config || { interval_minutes: 60, batch_size: 100, direction: 'bidirectional' }),
+    JSON.stringify(data.field_mappings || {}),
     data.is_active ?? true
   ]);
   
   return service;
 }
 
-export async function updateService(id: string, data: Partial<UnifiedService>) {
+export async function updateService(id: string, data: any) {
   const updates: string[] = [];
   const values: any[] = [];
   let paramCount = 1;
+
+  if (data.service_code !== undefined) {
+    updates.push(`service_code = $${paramCount++}`);
+    values.push(data.service_code);
+  }
 
   if (data.service_name !== undefined) {
     updates.push(`service_name = $${paramCount++}`);
@@ -69,14 +76,24 @@ export async function updateService(id: string, data: Partial<UnifiedService>) {
     values.push(data.service_url);
   }
   
-  if (data.database_config !== undefined) {
-    updates.push(`database_config = $${paramCount++}`);
-    values.push(JSON.stringify(data.database_config));
+  if (data.db_type !== undefined) {
+    updates.push(`db_type = $${paramCount++}`);
+    values.push(data.db_type);
+  }
+  
+  if (data.connection_config !== undefined) {
+    updates.push(`connection_config = $${paramCount++}`);
+    values.push(JSON.stringify(data.connection_config));
   }
   
   if (data.sync_config !== undefined) {
     updates.push(`sync_config = $${paramCount++}`);
     values.push(JSON.stringify(data.sync_config));
+  }
+  
+  if (data.field_mappings !== undefined) {
+    updates.push(`field_mappings = $${paramCount++}`);
+    values.push(JSON.stringify(data.field_mappings));
   }
   
   if (data.is_active !== undefined) {
