@@ -265,10 +265,11 @@
             <table class="table">
                 <thead>
                     <tr>
-                        <th>제공자</th>
+                        <th>타입</th>
                         <th>Client ID</th>
                         <th>Client Secret</th>
-                        <th>설명</th>
+                        <th>사용량</th>
+                        <th>마지막 사용</th>
                         <th>상태</th>
                         <th>생성일</th>
                         <th>작업</th>
@@ -276,7 +277,7 @@
                 </thead>
                 <tbody id="apiKeysTable">
                     <tr>
-                        <td colspan="7" style="text-align: center; color: #6e6e73;">로딩 중...</td>
+                        <td colspan="8" style="text-align: center; color: #6e6e73;">로딩 중...</td>
                     </tr>
                 </tbody>
             </table>
@@ -292,7 +293,7 @@
             </div>
             <form id="addKeyForm">
                 <div class="form-group">
-                    <label for="provider">제공자</label>
+                    <label for="provider">타입</label>
                     <select id="provider" name="provider" required>
                         <option value="">선택하세요</option>
                         <option value="naver_shopping">네이버 쇼핑</option>
@@ -310,10 +311,6 @@
                     <input type="password" id="client_secret" name="client_secret" required>
                 </div>
                 
-                <div class="form-group">
-                    <label for="description">설명</label>
-                    <textarea id="description" name="description" placeholder="이 API 키에 대한 설명을 입력하세요"></textarea>
-                </div>
                 
                 <div class="form-actions">
                     <button type="button" class="btn btn-secondary" onclick="testApiKey()">연결 테스트</button>
@@ -345,11 +342,13 @@
             const tbody = document.getElementById('apiKeysTable');
             
             if (keys.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: #6e6e73;">등록된 API 키가 없습니다</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: #6e6e73;">등록된 API 키가 없습니다</td></tr>';
                 return;
             }
             
-            tbody.innerHTML = keys.map(key => `
+            tbody.innerHTML = keys.map(key => {
+                const isShowing = window.secretVisibility && window.secretVisibility[key.id];
+                return `
                 <tr>
                     <td>
                         <span class="provider-badge provider-${key.provider === 'naver_shopping' ? 'naver' : 'coupang'}">
@@ -360,10 +359,23 @@
                         <span class="key-value">${key.client_id}</span>
                     </td>
                     <td>
-                        <span class="key-value key-hidden" id="secret-${key.id}">${key.client_secret || '••••••••'}</span>
-                        <button class="btn btn-small" onclick="toggleSecret('${key.id}')">보기</button>
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <input type="${isShowing ? 'text' : 'password'}" 
+                                   id="secret-${key.id}" 
+                                   class="key-value" 
+                                   value="${key.client_secret || '••••••••'}" 
+                                   readonly 
+                                   style="border: none; background: #f5f5f7; width: 200px;">
+                            <button class="btn btn-small" onclick="toggleSecret('${key.id}')">
+                                ${isShowing ? '숨기기' : '보기'}
+                            </button>
+                        </div>
                     </td>
-                    <td>${key.description || '-'}</td>
+                    <td>
+                        ${key.usage_count || 0}회
+                        ${key.daily_limit ? `/ ${key.daily_limit.toLocaleString()}` : ''}
+                    </td>
+                    <td>${key.last_used_at ? formatDateTime(key.last_used_at) : '사용 안함'}</td>
                     <td>
                         <span class="status-badge status-${key.is_active ? 'active' : 'inactive'}">
                             ${key.is_active ? '활성' : '비활성'}
@@ -377,7 +389,7 @@
                         </div>
                     </td>
                 </tr>
-            `).join('');
+            `}).join('');
         }
 
         function openAddKeyModal() {
@@ -388,9 +400,31 @@
             document.getElementById(modalId).style.display = 'none';
         }
 
+        // 전역 객체로 비밀번호 표시 상태 관리
+        window.secretVisibility = window.secretVisibility || {};
+        
         function toggleSecret(keyId) {
             const element = document.getElementById(`secret-${keyId}`);
-            element.classList.toggle('key-hidden');
+            const button = event.target;
+            
+            if (!window.secretVisibility[keyId]) {
+                // 서버에서 실제 secret 가져오기
+                fetch(`/api/keys/${keyId}/secret`)
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            element.value = data.secret;
+                            element.type = 'text';
+                            button.textContent = '숨기기';
+                            window.secretVisibility[keyId] = true;
+                        }
+                    })
+                    .catch(err => console.error('Failed to fetch secret:', err));
+            } else {
+                element.type = 'password';
+                button.textContent = '보기';
+                window.secretVisibility[keyId] = false;
+            }
         }
 
         async function testApiKey() {
@@ -424,8 +458,7 @@
             const keyData = {
                 provider: formData.get('provider'),
                 client_id: formData.get('client_id'),
-                client_secret: formData.get('client_secret'),
-                description: formData.get('description')
+                client_secret: formData.get('client_secret')
             };
             
             try {
@@ -486,6 +519,12 @@
         function formatDate(dateString) {
             if (!dateString) return '-';
             return new Date(dateString).toLocaleDateString('ko-KR');
+        }
+        
+        function formatDateTime(dateString) {
+            if (!dateString) return '-';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('ko-KR') + ' ' + date.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
         }
 
         // Close modal when clicking outside

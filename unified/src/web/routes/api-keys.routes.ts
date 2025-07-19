@@ -38,8 +38,10 @@ router.get('/', async (_req: Request, res: Response) => {
         key_id,
         provider,
         client_id,
-        description,
         is_active,
+        usage_count,
+        last_used_at,
+        daily_limit,
         created_at,
         updated_at
       FROM unified_api_keys
@@ -65,7 +67,7 @@ router.get('/', async (_req: Request, res: Response) => {
 
 // API 키 추가
 router.post('/', async (req: Request, res: Response) => {
-  const { provider, client_id, client_secret, description } = req.body;
+  const { provider, client_id, client_secret } = req.body;
 
   if (!provider || !client_id || !client_secret) {
     res.status(400).json({
@@ -95,10 +97,10 @@ router.post('/', async (req: Request, res: Response) => {
 
     const [newKey] = await query(`
       INSERT INTO unified_api_keys (
-        provider, client_id, client_secret, description, is_active
-      ) VALUES ($1, $2, $3, $4, true)
-      RETURNING key_id, provider, client_id, description, is_active, created_at
-    `, [provider, client_id, encryptedSecret, description]);
+        provider, client_id, client_secret, is_active
+      ) VALUES ($1, $2, $3, true)
+      RETURNING key_id, provider, client_id, is_active, created_at
+    `, [provider, client_id, encryptedSecret]);
 
     res.json({
       success: true,
@@ -202,6 +204,40 @@ router.post('/:id/validate', async (req: Request, res: Response) => {
   }
 });
 
+// API 키 Secret 조회
+router.get('/:id/secret', async (req: Request, res: Response) => {
+  const { id } = req.params;
+
+  try {
+    const [key] = await query(`
+      SELECT client_secret
+      FROM unified_api_keys
+      WHERE key_id = $1 AND deleted_at IS NULL
+    `, [id]);
+
+    if (!key) {
+      res.status(404).json({
+        success: false,
+        error: 'API 키를 찾을 수 없습니다'
+      });
+      return;
+    }
+
+    const decryptedSecret = decrypt(key.client_secret);
+
+    res.json({
+      success: true,
+      secret: decryptedSecret
+    });
+  } catch (error) {
+    console.error('Secret fetch error:', error);
+    res.status(500).json({
+      success: false,
+      error: '비밀키 조회에 실패했습니다'
+    });
+  }
+});
+
 // API 키 삭제 (soft delete)
 router.delete('/:id', async (req: Request, res: Response) => {
   const { id } = req.params;
@@ -235,19 +271,56 @@ router.delete('/:id', async (req: Request, res: Response) => {
   }
 });
 
+// API 키 사용량 업데이트
+export async function updateApiKeyUsage(keyId: string) {
+  try {
+    // 먼저 일일 사용량 리셋 체크
+    await query(`
+      UPDATE unified_api_keys
+      SET 
+        usage_count = CASE 
+          WHEN last_reset_at < CURRENT_DATE THEN 1
+          ELSE usage_count + 1
+        END,
+        last_reset_at = CASE
+          WHEN last_reset_at < CURRENT_DATE THEN CURRENT_DATE
+          ELSE last_reset_at
+        END,
+        last_used_at = CURRENT_TIMESTAMP
+      WHERE key_id = $1
+    `, [keyId]);
+  } catch (error) {
+    console.error('Failed to update API key usage:', error);
+  }
+}
+
 // 활성 API 키 가져오기 (내부 사용)
-export async function getActiveApiKey(provider: string): Promise<{ client_id: string; client_secret: string } | null> {
+export async function getActiveApiKey(provider: string): Promise<{ key_id: string; client_id: string; client_secret: string } | null> {
   try {
     const [key] = await query(`
-      SELECT client_id, client_secret
+      SELECT 
+        key_id, 
+        client_id, 
+        client_secret,
+        usage_count,
+        daily_limit,
+        last_reset_at
       FROM unified_api_keys
-      WHERE provider = $1 AND is_active = true AND deleted_at IS NULL
+      WHERE provider = $1 
+        AND is_active = true 
+        AND deleted_at IS NULL
+        AND (
+          last_reset_at < CURRENT_DATE 
+          OR usage_count < daily_limit 
+          OR daily_limit IS NULL
+        )
       ORDER BY created_at DESC
       LIMIT 1
     `, [provider]);
 
     if (key) {
       return {
+        key_id: key.key_id,
         client_id: key.client_id,
         client_secret: decrypt(key.client_secret)
       };
