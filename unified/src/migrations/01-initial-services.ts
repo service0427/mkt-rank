@@ -16,9 +16,6 @@ async function createInitialServices() {
         service_id, service_code, service_name, service_url,
         db_type, connection_config, sync_config, field_mappings, is_active
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-      ON CONFLICT (service_code) DO UPDATE SET
-        service_name = EXCLUDED.service_name,
-        updated_at = CURRENT_TIMESTAMP
       RETURNING *
     `, [
       'svc_mkt_guide_' + Date.now(),
@@ -54,9 +51,6 @@ async function createInitialServices() {
         service_id, service_code, service_name, service_url,
         db_type, connection_config, sync_config, field_mappings, is_active
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-      ON CONFLICT (service_code) DO UPDATE SET
-        service_name = EXCLUDED.service_name,
-        updated_at = CURRENT_TIMESTAMP
       RETURNING *
     `, [
       'svc_top_re_' + Date.now(),
