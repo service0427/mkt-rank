@@ -36,7 +36,7 @@ async function migrateSupabaseKeywords(serviceId?: string) {
     const { data: keywords, error } = await supabase
       .from('search_keywords')
       .select('*')
-      .eq('active', true)
+      .eq('is_active', true)
       .order('created_at', { ascending: false });
     
     if (error) {
@@ -82,7 +82,7 @@ async function migrateSupabaseKeywords(serviceId?: string) {
               keyword.id, // 기존 Supabase UUID를 그대로 사용
               keyword.keyword,
               serviceId,
-              keyword.active,
+              keyword.is_active,
               keyword.pc_search_volume || 0,
               keyword.mobile_search_volume || 0,
               keyword.total_search_volume || 0,
