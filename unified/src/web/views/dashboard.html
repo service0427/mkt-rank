@@ -4,100 +4,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>통합 시스템 대시보드</title>
+    <link rel="stylesheet" href="/public/css/common.css">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background-color: #f5f5f7;
-            color: #1d1d1f;
-        }
-        
-        .header {
-            background-color: #fff;
-            border-bottom: 1px solid #e5e5e7;
-            padding: 1rem 2rem;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
-        
-        .nav {
-            display: flex;
-            gap: 2rem;
-            margin-top: 1rem;
-        }
-        
-        .nav a {
-            color: #06c;
-            text-decoration: none;
-            padding: 0.5rem 1rem;
-            border-radius: 8px;
-            transition: background-color 0.2s;
-        }
-        
-        .nav a:hover, .nav a.active {
-            background-color: #f5f5f7;
-        }
-        
-        .container {
-            max-width: 1200px;
-            margin: 2rem auto;
-            padding: 0 2rem;
-        }
-        
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 2rem;
-        }
-        
-        .stat-card {
-            background: #fff;
-            padding: 1.5rem;
-            border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        }
         
         .stat-value {
-            font-size: 2.5rem;
-            font-weight: 600;
             color: #06c;
-            margin: 0.5rem 0;
-        }
-        
-        .stat-label {
-            color: #6e6e73;
-            font-size: 0.9rem;
+            margin: 0.3rem 0;
         }
         
         .section {
-            background: #fff;
-            padding: 2rem;
-            border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-            margin-bottom: 2rem;
+            margin-bottom: 1.5rem;
         }
         
         .section h2 {
-            margin-bottom: 1.5rem;
+            margin-bottom: 1rem;
             color: #1d1d1f;
         }
-        
-        .table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        
-        .table th {
-            text-align: left;
-            padding: 0.75rem;
-            border-bottom: 2px solid #e5e5e7;
             color: #6e6e73;
             font-weight: 500;
         }
