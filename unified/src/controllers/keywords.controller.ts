@@ -4,7 +4,9 @@ import { UnifiedKeyword } from '../types';
 
 export async function getKeywords(filters: any = {}) {
   try {
-    const { service_id, search, is_active, type, page = 1, limit = 50 } = filters;
+    const { service_id, search, is_active, type } = filters;
+    const page = parseInt(filters.page) || 1;
+    const limit = parseInt(filters.limit) || 50;
     
     let whereConditions = [];
     let params = [];
@@ -36,18 +38,20 @@ export async function getKeywords(filters: any = {}) {
     // Get total count
     const [countResult] = await query<{ count: string }>(`
       SELECT COUNT(*) as count 
-      FROM unified_search_keywords 
+      FROM unified_search_keywords k
       ${whereClause}
     `, params);
     
     const total = parseInt(countResult.count);
     
-    // Get keywords
+    // Get keywords with service info
     params.push(limit, offset);
-    const keywords = await query<UnifiedKeyword>(`
-      SELECT * FROM unified_search_keywords 
+    const keywords = await query<UnifiedKeyword & { service_name: string }>(`
+      SELECT k.*, s.service_name 
+      FROM unified_search_keywords k
+      LEFT JOIN unified_services s ON k.service_id = s.service_id
       ${whereClause}
-      ORDER BY created_at DESC
+      ORDER BY k.created_at DESC
       LIMIT $${paramCount++} OFFSET $${paramCount++}
     `, params);
     
@@ -81,17 +85,14 @@ export async function getKeywords(filters: any = {}) {
 }
 
 export async function createKeyword(data: any) {
-  const keywordId = `kw_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-  
   const [keyword] = await query<UnifiedKeyword>(`
     INSERT INTO unified_search_keywords (
-      keyword_id, keyword, service_id, is_active,
+      keyword, service_id, is_active,
       pc_count, mobile_count, total_count,
       pc_ratio, mobile_ratio, type, user_id, metadata
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
     RETURNING *
   `, [
-    keywordId,
     data.keyword,
     data.service_id,
     data.is_active ?? true,
@@ -165,7 +166,7 @@ export async function updateKeyword(id: string, data: any) {
   const [keyword] = await query<UnifiedKeyword>(`
     UPDATE unified_search_keywords 
     SET ${updates.join(', ')}
-    WHERE keyword_id = $${paramCount}
+    WHERE id = $${paramCount}
     RETURNING *
   `, values);
   
@@ -175,7 +176,7 @@ export async function updateKeyword(id: string, data: any) {
 export async function deleteKeyword(id: string) {
   await query(`
     DELETE FROM unified_search_keywords 
-    WHERE keyword_id = $1
+    WHERE id = $1
   `, [id]);
   
   return true;
