@@ -83,19 +83,19 @@ async function migrateSupabaseKeywords(serviceId?: string) {
               keyword.keyword,
               serviceId,
               keyword.is_active,
-              keyword.pc_search_volume || 0,
-              keyword.mobile_search_volume || 0,
-              keyword.total_search_volume || 0,
+              keyword.pc_count || 0,
+              keyword.mobile_count || 0,
+              keyword.total_count || 0,
               keyword.pc_ratio || 0,
               keyword.mobile_ratio || 0,
-              'shopping',
+              keyword.type || 'shopping',
               keyword.user_id || null,
               JSON.stringify({
                 source: 'supabase',
                 migrated_at: new Date()
               }),
-              keyword.created_at,
-              keyword.updated_at || keyword.created_at
+              keyword.searched_at || new Date(),
+              keyword.searched_at || new Date()
             ]);
             
             successCount++;
@@ -120,9 +120,8 @@ async function migrateSupabaseKeywords(serviceId?: string) {
         sync_id, service_id, sync_type, sync_direction,
         started_at, completed_at, status,
         total_records, success_records, failed_records
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      ) VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, $8, $9)
     `, [
-      'sync_migration_supabase_' + Date.now(),
       serviceId,
       'full',
       'import',

@@ -132,9 +132,8 @@ async function migrateMySQLKeywords(serviceId?: string) {
         sync_id, service_id, sync_type, sync_direction,
         started_at, completed_at, status,
         total_records, success_records, failed_records
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      ) VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, $8, $9)
     `, [
-      'sync_migration_mysql_' + Date.now(),
       serviceId,
       'full',
       'import',
