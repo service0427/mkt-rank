@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Unified System Dashboard</title>
+    <title>통합 시스템 대시보드</title>
     <style>
         * {
             margin: 0;
@@ -143,75 +143,75 @@
 </head>
 <body>
     <header class="header">
-        <h1>Unified Keyword Management System</h1>
+        <h1>통합 키워드 관리 시스템</h1>
         <nav class="nav">
-            <a href="/" class="active">Dashboard</a>
-            <a href="/services">Services</a>
-            <a href="/keywords">Keywords</a>
-            <a href="/sync">Sync</a>
-            <a href="/rankings">Rankings</a>
-            <a href="/api-keys">API Keys</a>
-            <a href="/settings">Settings</a>
+            <a href="/" class="active">대시보드</a>
+            <a href="/services">서비스 관리</a>
+            <a href="/keywords">키워드 검색</a>
+            <a href="/sync">동기화</a>
+            <a href="/rankings">순위 모니터</a>
+            <a href="/api-keys">API 키</a>
+            <a href="/settings">설정</a>
         </nav>
     </header>
 
     <div class="container">
         <div class="stats-grid">
             <div class="stat-card">
-                <div class="stat-label">Total Services</div>
+                <div class="stat-label">전체 서비스</div>
                 <div class="stat-value" id="totalServices">-</div>
             </div>
             <div class="stat-card">
-                <div class="stat-label">Active Services</div>
+                <div class="stat-label">활성 서비스</div>
                 <div class="stat-value" id="activeServices">-</div>
             </div>
             <div class="stat-card">
-                <div class="stat-label">Total Keywords</div>
+                <div class="stat-label">전체 키워드</div>
                 <div class="stat-value" id="totalKeywords">-</div>
             </div>
             <div class="stat-card">
-                <div class="stat-label">Last Sync</div>
+                <div class="stat-label">마지막 동기화</div>
                 <div class="stat-value" id="lastSync">-</div>
             </div>
         </div>
 
         <section class="section">
-            <h2>Service Status</h2>
+            <h2>서비스 상태</h2>
             <table class="table">
                 <thead>
                     <tr>
-                        <th>Service</th>
+                        <th>서비스</th>
                         <th>URL</th>
-                        <th>Type</th>
-                        <th>Keywords</th>
-                        <th>Last Sync</th>
-                        <th>Status</th>
+                        <th>타입</th>
+                        <th>키워드</th>
+                        <th>마지막 동기화</th>
+                        <th>상태</th>
                     </tr>
                 </thead>
                 <tbody id="servicesTable">
                     <tr>
-                        <td colspan="6" style="text-align: center; color: #6e6e73;">Loading...</td>
+                        <td colspan="6" style="text-align: center; color: #6e6e73;">로딩 중...</td>
                     </tr>
                 </tbody>
             </table>
         </section>
 
         <section class="section">
-            <h2>Recent Sync Activities</h2>
+            <h2>최근 동기화 활동</h2>
             <table class="table">
                 <thead>
                     <tr>
-                        <th>Time</th>
-                        <th>Service</th>
-                        <th>Type</th>
-                        <th>Direction</th>
-                        <th>Records</th>
-                        <th>Status</th>
+                        <th>시간</th>
+                        <th>서비스</th>
+                        <th>타입</th>
+                        <th>방향</th>
+                        <th>레코드</th>
+                        <th>상태</th>
                     </tr>
                 </thead>
                 <tbody id="syncTable">
                     <tr>
-                        <td colspan="6" style="text-align: center; color: #6e6e73;">Loading...</td>
+                        <td colspan="6" style="text-align: center; color: #6e6e73;">로딩 중...</td>
                     </tr>
                 </tbody>
             </table>
@@ -267,7 +267,7 @@
                     <td>${formatTime(service.last_sync)}</td>
                     <td>
                         <span class="status-badge ${service.is_active ? 'status-active' : 'status-inactive'}">
-                            ${service.is_active ? 'Active' : 'Inactive'}
+                            ${service.is_active ? '활성' : '비활성'}
                         </span>
                     </td>
                 </tr>
@@ -298,9 +298,9 @@
             const now = new Date();
             const diff = now - date;
             
-            if (diff < 60000) return 'Just now';
-            if (diff < 3600000) return Math.floor(diff / 60000) + 'm ago';
-            if (diff < 86400000) return Math.floor(diff / 3600000) + 'h ago';
+            if (diff < 60000) return '방금 전';
+            if (diff < 3600000) return Math.floor(diff / 60000) + '분 전';
+            if (diff < 86400000) return Math.floor(diff / 3600000) + '시간 전';
             
             return date.toLocaleDateString('ko-KR');
         }
