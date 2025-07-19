@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Service Management - Unified System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f5f5f7;
+            color: #1d1d1f;
+        }
+        
+        .header {
+            background-color: #fff;
+            border-bottom: 1px solid #e5e5e7;
+            padding: 1rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .nav {
+            display: flex;
+            gap: 2rem;
+            margin-top: 1rem;
+        }
+        
+        .nav a {
+            color: #06c;
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            transition: background-color 0.2s;
+        }
+        
+        .nav a:hover, .nav a.active {
+            background-color: #f5f5f7;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+        
+        .actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+        
+        .btn {
+            background-color: #06c;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        .btn:hover {
+            background-color: #0051a8;
+        }
+        
+        .btn-secondary {
+            background-color: #6e6e73;
+        }
+        
+        .btn-secondary:hover {
+            background-color: #515154;
+        }
+        
+        .section {
+            background: #fff;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+        }
+        
+        .service-card {
+            background: #fff;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            margin-bottom: 1.5rem;
+        }
+        
+        .service-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        
+        .service-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+        
+        .service-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .info-item {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .info-label {
+            color: #6e6e73;
+            font-size: 0.875rem;
+            margin-bottom: 0.25rem;
+        }
+        
+        .info-value {
+            font-weight: 500;
+        }
+        
+        .service-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .btn-small {
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 16px;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+        
+        .status-active {
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+        
+        .status-inactive {
+            background-color: #fee2e2;
+            color: #991b1b;
+        }
+        
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+        
+        .modal-content {
+            background-color: #fff;
+            margin: 5% auto;
+            padding: 2rem;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 600px;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+        
+        .close {
+            font-size: 2rem;
+            font-weight: 300;
+            cursor: pointer;
+            color: #6e6e73;
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+        
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #e5e5e7;
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+        
+        .form-group textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+        
+        .form-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <h1>Service Management</h1>
+        <nav class="nav">
+            <a href="/">Dashboard</a>
+            <a href="/services" class="active">Services</a>
+            <a href="/keywords">Keywords</a>
+            <a href="/sync">Sync</a>
+            <a href="/rankings">Rankings</a>
+            <a href="/api-keys">API Keys</a>
+            <a href="/settings">Settings</a>
+        </nav>
+    </header>
+
+    <div class="container">
+        <div class="actions">
+            <h2>Registered Services</h2>
+            <button class="btn" onclick="openAddServiceModal()">Add New Service</button>
+        </div>
+
+        <div id="servicesList">
+            <!-- Services will be loaded here -->
+        </div>
+    </div>
+
+    <!-- Add Service Modal -->
+    <div id="addServiceModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Add New Service</h2>
+                <span class="close" onclick="closeModal('addServiceModal')">&times;</span>
+            </div>
+            <form id="addServiceForm">
+                <div class="form-group">
+                    <label for="service_name">Service Name</label>
+                    <input type="text" id="service_name" name="service_name" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="service_code">Service Code</label>
+                    <input type="text" id="service_code" name="service_code" required 
+                           pattern="[a-z0-9-]+" title="Lowercase letters, numbers, and hyphens only">
+                </div>
+                
+                <div class="form-group">
+                    <label for="service_url">Service URL</label>
+                    <input type="url" id="service_url" name="service_url" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="db_type">Database Type</label>
+                    <select id="db_type" name="db_type" required onchange="updateConnectionFields()">
+                        <option value="">Select Type</option>
+                        <option value="supabase">Supabase</option>
+                        <option value="mysql">MySQL</option>
+                        <option value="postgresql">PostgreSQL</option>
+                    </select>
+                </div>
+                
+                <div id="connectionFields">
+                    <!-- Dynamic connection fields will be added here -->
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="testConnection()">Test Connection</button>
+                    <button type="submit" class="btn">Save Service</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Load services on page load
+        loadServices();
+        
+        async function loadServices() {
+            try {
+                const response = await fetch('/api/services');
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayServices(data.data);
+                }
+            } catch (error) {
+                console.error('Failed to load services:', error);
+            }
+        }
+        
+        function displayServices(services) {
+            const container = document.getElementById('servicesList');
+            
+            if (services.length === 0) {
+                container.innerHTML = '<div class="section"><p style="text-align: center; color: #6e6e73;">No services registered yet.</p></div>';
+                return;
+            }
+            
+            container.innerHTML = services.map(service => `
+                <div class="service-card">
+                    <div class="service-header">
+                        <h3 class="service-title">${service.service_name}</h3>
+                        <span class="status-badge ${service.is_active ? 'status-active' : 'status-inactive'}">
+                            ${service.is_active ? 'Active' : 'Inactive'}
+                        </span>
+                    </div>
+                    <div class="service-info">
+                        <div class="info-item">
+                            <span class="info-label">URL</span>
+                            <span class="info-value"><a href="${service.service_url}" target="_blank">${service.service_url}</a></span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Database Type</span>
+                            <span class="info-value">${service.db_type}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Keywords</span>
+                            <span class="info-value">${service.keyword_count || 0}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Last Sync</span>
+                            <span class="info-value">${formatDate(service.last_sync)}</span>
+                        </div>
+                    </div>
+                    <div class="service-actions">
+                        <button class="btn btn-small" onclick="syncService('${service.service_id}')">Sync Now</button>
+                        <button class="btn btn-small btn-secondary" onclick="editService('${service.service_id}')">Edit</button>
+                        <button class="btn btn-small btn-secondary" onclick="toggleService('${service.service_id}', ${service.is_active})">
+                            ${service.is_active ? 'Deactivate' : 'Activate'}
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function openAddServiceModal() {
+            document.getElementById('addServiceModal').style.display = 'block';
+        }
+        
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+        
+        function updateConnectionFields() {
+            const dbType = document.getElementById('db_type').value;
+            const container = document.getElementById('connectionFields');
+            
+            if (!dbType) {
+                container.innerHTML = '';
+                return;
+            }
+            
+            let fields = '';
+            
+            if (dbType === 'supabase') {
+                fields = `
+                    <div class="form-group">
+                        <label for="supabase_url">Supabase URL</label>
+                        <input type="url" id="supabase_url" name="supabase_url" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="supabase_key">Supabase Anon Key</label>
+                        <input type="text" id="supabase_key" name="supabase_key" required>
+                    </div>
+                `;
+            } else if (dbType === 'mysql' || dbType === 'postgresql') {
+                fields = `
+                    <div class="form-group">
+                        <label for="db_host">Host</label>
+                        <input type="text" id="db_host" name="db_host" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="db_port">Port</label>
+                        <input type="number" id="db_port" name="db_port" required value="${dbType === 'mysql' ? 3306 : 5432}">
+                    </div>
+                    <div class="form-group">
+                        <label for="db_database">Database</label>
+                        <input type="text" id="db_database" name="db_database" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="db_user">User</label>
+                        <input type="text" id="db_user" name="db_user" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="db_password">Password</label>
+                        <input type="password" id="db_password" name="db_password" required>
+                    </div>
+                `;
+            }
+            
+            container.innerHTML = fields;
+        }
+        
+        async function testConnection() {
+            const dbType = document.getElementById('db_type').value;
+            const connectionConfig = {};
+            
+            if (dbType === 'supabase') {
+                connectionConfig.url = document.getElementById('supabase_url').value;
+                connectionConfig.key = document.getElementById('supabase_key').value;
+            } else if (dbType === 'mysql' || dbType === 'postgresql') {
+                connectionConfig.host = document.getElementById('db_host').value;
+                connectionConfig.port = parseInt(document.getElementById('db_port').value);
+                connectionConfig.database = document.getElementById('db_database').value;
+                connectionConfig.user = document.getElementById('db_user').value;
+                connectionConfig.password = document.getElementById('db_password').value;
+            }
+            
+            try {
+                const response = await fetch('/api/services/test-connection', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ db_type: dbType, connection_config: connectionConfig })
+                });
+                
+                const result = await response.json();
+                alert(result.success ? 'Connection successful!' : 'Connection failed: ' + result.error);
+            } catch (error) {
+                alert('Connection test failed: ' + error.message);
+            }
+        }
+        
+        document.getElementById('addServiceForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const dbType = formData.get('db_type');
+            const connectionConfig = {};
+            
+            if (dbType === 'supabase') {
+                connectionConfig.url = formData.get('supabase_url');
+                connectionConfig.key = formData.get('supabase_key');
+            } else if (dbType === 'mysql' || dbType === 'postgresql') {
+                connectionConfig.host = formData.get('db_host');
+                connectionConfig.port = parseInt(formData.get('db_port'));
+                connectionConfig.database = formData.get('db_database');
+                connectionConfig.user = formData.get('db_user');
+                connectionConfig.password = formData.get('db_password');
+            }
+            
+            const serviceData = {
+                service_name: formData.get('service_name'),
+                service_code: formData.get('service_code'),
+                service_url: formData.get('service_url'),
+                db_type: dbType,
+                connection_config: connectionConfig
+            };
+            
+            try {
+                const response = await fetch('/api/services', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(serviceData)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert('Service added successfully!');
+                    closeModal('addServiceModal');
+                    loadServices();
+                } else {
+                    alert('Failed to add service: ' + result.error);
+                }
+            } catch (error) {
+                alert('Error adding service: ' + error.message);
+            }
+        });
+        
+        async function syncService(serviceId) {
+            if (!confirm('Start sync for this service?')) return;
+            
+            try {
+                const response = await fetch(`/api/sync/trigger/${serviceId}`, {
+                    method: 'POST'
+                });
+                
+                const result = await response.json();
+                alert(result.success ? 'Sync started!' : 'Sync failed: ' + result.error);
+            } catch (error) {
+                alert('Error starting sync: ' + error.message);
+            }
+        }
+        
+        function formatDate(dateString) {
+            if (!dateString) return 'Never';
+            return new Date(dateString).toLocaleString('ko-KR');
+        }
+        
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            if (event.target.className === 'modal') {
+                event.target.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>
