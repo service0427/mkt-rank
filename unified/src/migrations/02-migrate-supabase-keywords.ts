@@ -37,7 +37,7 @@ async function migrateSupabaseKeywords(serviceId?: string) {
       .from('search_keywords')
       .select('*')
       .eq('is_active', true)
-      .order('created_at', { ascending: false });
+      .order('searched_at', { ascending: false });
     
     if (error) {
       throw error;
@@ -48,6 +48,11 @@ async function migrateSupabaseKeywords(serviceId?: string) {
     if (!keywords || keywords.length === 0) {
       console.log('No keywords to migrate');
       return;
+    }
+    
+    // 첫 번째 키워드 구조 확인
+    if (keywords.length > 0) {
+      console.log('Sample keyword structure:', Object.keys(keywords[0]));
     }
     
     // Migrate in batches
@@ -66,8 +71,8 @@ async function migrateSupabaseKeywords(serviceId?: string) {
                 id, keyword, service_id, is_active,
                 pc_count, mobile_count, total_count,
                 pc_ratio, mobile_ratio, type, user_id, metadata,
-                created_at, updated_at
-              ) VALUES ($1::uuid, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+                searched_at, created_at, updated_at
+              ) VALUES ($1::uuid, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
               ON CONFLICT (keyword, service_id, type) 
               DO UPDATE SET
                 is_active = EXCLUDED.is_active,
@@ -77,6 +82,7 @@ async function migrateSupabaseKeywords(serviceId?: string) {
                 pc_ratio = EXCLUDED.pc_ratio,
                 mobile_ratio = EXCLUDED.mobile_ratio,
                 metadata = EXCLUDED.metadata,
+                searched_at = EXCLUDED.searched_at,
                 updated_at = EXCLUDED.updated_at
             `, [
               keyword.id, // 기존 Supabase UUID를 그대로 사용
@@ -94,8 +100,9 @@ async function migrateSupabaseKeywords(serviceId?: string) {
                 source: 'supabase',
                 migrated_at: new Date()
               }),
-              keyword.searched_at || new Date(),
-              keyword.searched_at || new Date()
+              keyword.searched_at || null,  // searched_at
+              keyword.searched_at || new Date(),  // created_at으로 사용
+              keyword.searched_at || new Date()   // updated_at으로 사용
             ]);
             
             successCount++;
