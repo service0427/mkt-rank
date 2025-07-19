@@ -78,12 +78,15 @@
         }
 
         .btn {
-            padding: 10px 20px;
+            padding: 10px 24px;
             border: none;
             border-radius: 4px;
             font-size: 14px;
+            font-weight: 500;
             cursor: pointer;
             transition: background-color 0.3s;
+            white-space: nowrap;
+            min-width: 70px;
         }
 
         .btn-primary {
@@ -171,7 +174,8 @@
 
         .action-buttons {
             display: flex;
-            gap: 5px;
+            gap: 8px;
+            justify-content: flex-start;
         }
 
         .loading {
@@ -295,10 +299,6 @@
                             <option value="naver_shopping">네이버 쇼핑</option>
                         </select>
                     </div>
-                    <div class="form-group">
-                        <label for="description">설명</label>
-                        <input type="text" id="description" name="description" placeholder="API 키 설명 (선택사항)">
-                    </div>
                 </div>
                 <div class="form-row">
                     <div class="form-group">
@@ -322,7 +322,6 @@
                         <th>Provider</th>
                         <th>Client ID</th>
                         <th>Client Secret</th>
-                        <th>설명</th>
                         <th>상태</th>
                         <th>사용 횟수</th>
                         <th>마지막 사용</th>
@@ -354,10 +353,6 @@
                 <div class="form-group">
                     <label for="editClientSecret">Client Secret</label>
                     <input type="text" id="editClientSecret" required>
-                </div>
-                <div class="form-group">
-                    <label for="editDescription">설명</label>
-                    <textarea id="editDescription"></textarea>
                 </div>
                 <button type="submit" class="btn btn-primary">저장</button>
                 <button type="button" class="btn btn-secondary" onclick="closeEditModal()">취소</button>
@@ -402,7 +397,6 @@
                     <td>${key.provider}</td>
                     <td>${key.client_id}</td>
                     <td>${key.client_secret}</td>
-                    <td>${key.description || '-'}</td>
                     <td>
                         <span class="${key.is_active ? 'status-active' : 'status-inactive'}">
                             ${key.is_active ? '활성' : '비활성'}
@@ -576,7 +570,6 @@
             document.getElementById('editKeyId').value = key.id;
             document.getElementById('editClientId').value = key.client_id;
             document.getElementById('editClientSecret').value = key.client_secret.replace('****', '');
-            document.getElementById('editDescription').value = key.description || '';
 
             document.getElementById('editModal').style.display = 'block';
         }
@@ -593,8 +586,7 @@
             const id = document.getElementById('editKeyId').value;
             const updates = {
                 client_id: document.getElementById('editClientId').value,
-                client_secret: document.getElementById('editClientSecret').value,
-                description: document.getElementById('editDescription').value
+                client_secret: document.getElementById('editClientSecret').value
             };
 
             try {

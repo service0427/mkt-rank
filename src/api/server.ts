@@ -14,6 +14,7 @@ import monitorRoutes from '../routes/monitor.routes';
 import rankingRoutes from '../routes/ranking.routes';
 // import coupangRoutes from '../routes/coupang.routes';
 import apiKeysRoutes from '../routes/api-keys.routes';
+import adSlotsRoutes from '../routes/ad-slots.routes';
 
 const app = express();
 const HTTP_PORT = process.env.API_PORT || 3001;
@@ -35,6 +36,9 @@ app.use('/api/ranking', rankingRoutes);
 // API Keys routes
 app.use('/api/keys', apiKeysRoutes);
 
+// AD Slots routes
+app.use('/api/ad-slots', adSlotsRoutes);
+
 // Serve monitoring dashboard
 app.get('/monitor', (_req, res) => {
   res.sendFile(path.join(__dirname, '../views/monitor-dashboard.html'));
@@ -43,6 +47,11 @@ app.get('/monitor', (_req, res) => {
 // Serve API keys management page
 app.get('/api-keys', (_req, res) => {
   res.sendFile(path.join(__dirname, '../views/api-keys-management.html'));
+});
+
+// Serve AD_SLOTS dashboard
+app.get('/ad-slots', (_req, res) => {
+  res.sendFile(path.join(__dirname, '../views/ad-slots-dashboard.html'));
 });
 
 // Initialize providers
@@ -232,6 +241,22 @@ function logEndpoints() {
   logger.info('  POST /api/coupang/check-multiple');
   logger.info('  POST /api/coupang/check-rocket');
   logger.info('  GET  /api/coupang/status/:keyword');
+  logger.info('');
+  logger.info('=== AD Slots API ===');
+  logger.info('  GET  /api/ad-slots/status');
+  logger.info('  POST /api/ad-slots/collect');
+  logger.info('  POST /api/ad-slots/collect/:id');
+  logger.info('  GET  /api/ad-slots/slots');
+  logger.info('  GET  /api/ad-slots/slots/:id');
+  logger.info('  GET  /api/ad-slots/priority');
+  logger.info('  GET  /api/ad-slots/keywords');
+  logger.info('  POST /api/ad-slots/queue/clean');
+  logger.info('  POST /api/ad-slots/reset/:id');
+  logger.info('');
+  logger.info('=== 대시보드 ===');
+  logger.info('  GET  /monitor - 기존 모니터링');
+  logger.info('  GET  /api-keys - API 키 관리');
+  logger.info('  GET  /ad-slots - AD_SLOTS 모니터링');
   logger.info('');
   logger.info('=== 새로운 키워드 순위 체크 API 테스트 방법 ===');
   logger.info('');
