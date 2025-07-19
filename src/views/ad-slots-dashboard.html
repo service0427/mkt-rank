@@ -333,12 +333,14 @@
                 <div class="stat-value" id="todayUpdated">-</div>
             </div>
             <div class="stat-card">
-                <div class="stat-label">평균 가격 순위 변동</div>
-                <div class="stat-value" id="avgPriceChange">-</div>
+                <div class="stat-label">가격 순위 변동</div>
+                <div class="stat-value" id="priceChangeCount">-</div>
+                <div class="stat-change">수집된 항목</div>
             </div>
             <div class="stat-card">
-                <div class="stat-label">평균 스토어 순위 변동</div>
-                <div class="stat-value" id="avgStoreChange">-</div>
+                <div class="stat-label">스토어 순위 변동</div>
+                <div class="stat-value" id="storeChangeCount">-</div>
+                <div class="stat-change">수집된 항목</div>
             </div>
             <div class="stat-card">
                 <div class="stat-label">큐 대기</div>
@@ -468,19 +470,44 @@
                 document.getElementById('activeSlots').textContent = stats.activeSlots || 0;
                 document.getElementById('todayUpdated').textContent = stats.totalUpdatedToday || 0;
                 
-                const avgPriceChange = stats.avgPriceRankDiff || 0;
-                const avgStoreChange = stats.avgStoreRankDiff || 0;
-                
-                const priceEl = document.getElementById('avgPriceChange');
-                priceEl.textContent = avgPriceChange > 0 ? `+${avgPriceChange.toFixed(1)}` : avgPriceChange.toFixed(1);
-                priceEl.className = avgPriceChange > 0 ? 'stat-value positive' : 'stat-value negative';
-                
-                const storeEl = document.getElementById('avgStoreChange');
-                storeEl.textContent = avgStoreChange > 0 ? `+${avgStoreChange.toFixed(1)}` : avgStoreChange.toFixed(1);
-                storeEl.className = avgStoreChange > 0 ? 'stat-value positive' : 'stat-value negative';
+                // 슬롯 데이터가 로드된 후 통계 계산
+                if (allSlots.length > 0) {
+                    updateChangeStats();
+                }
             } catch (error) {
                 console.error('Failed to load stats:', error);
             }
+        }
+        
+        // Update change statistics
+        function updateChangeStats() {
+            let priceChangeCount = 0;
+            let storeChangeCount = 0;
+            let priceCollectedCount = 0;
+            let storeCollectedCount = 0;
+            
+            allSlots.forEach(slot => {
+                if (slot.price_rank) {
+                    priceCollectedCount++;
+                    if (slot.price_rank_diff && slot.price_rank_diff !== 0) {
+                        priceChangeCount++;
+                    }
+                }
+                if (slot.store_rank) {
+                    storeCollectedCount++;
+                    if (slot.store_rank_diff && slot.store_rank_diff !== 0) {
+                        storeChangeCount++;
+                    }
+                }
+            });
+            
+            const priceEl = document.getElementById('priceChangeCount');
+            priceEl.textContent = `${priceChangeCount} / ${priceCollectedCount}`;
+            priceEl.className = 'stat-value';
+            
+            const storeEl = document.getElementById('storeChangeCount');
+            storeEl.textContent = `${storeChangeCount} / ${storeCollectedCount}`;
+            storeEl.className = 'stat-value';
         }
 
         // Load slots data
@@ -492,6 +519,7 @@
                 const data = await response.json();
                 allSlots = data.slots;
                 filterTable();
+                updateChangeStats(); // 슬롯 데이터 로드 후 통계 업데이트
             } catch (error) {
                 console.error('Failed to load slots:', error);
                 document.getElementById('slotsTableBody').innerHTML = `

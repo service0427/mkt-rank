@@ -42,10 +42,10 @@ export class AdSlotUpdateService {
         `;
 
         await connection.execute(initStartRankQuery, [
-          result.price_rank,
-          result.price_rank,
-          result.store_rank,
-          result.store_rank,
+          result.price_rank === undefined ? null : result.price_rank,
+          result.price_rank === undefined ? null : result.price_rank,
+          result.store_rank === undefined ? null : result.store_rank,
+          result.store_rank === undefined ? null : result.store_rank,
           result.ad_slot_id,
         ]);
 
