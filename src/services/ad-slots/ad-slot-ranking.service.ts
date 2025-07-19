@@ -58,6 +58,25 @@ export class AdSlotRankingService {
         logger.debug(`Searching page ${page} for keyword: ${adSlot.work_keyword}`);
         
         const searchResponse = await this.searchProvider.search(adSlot.work_keyword, page);
+        
+        // 첫 페이지 첫 번째 상품 상세 로그
+        if (page === 1 && searchResponse.results.length > 0) {
+          console.log('=== API RESPONSE SAMPLE ===');
+          console.log(`Keyword: ${adSlot.work_keyword}`);
+          console.log(`Ad Slot ID: ${adSlot.ad_slot_id}`);
+          console.log(`Searching for - Price MID: ${adSlot.price_compare_mid}, Product MID: ${adSlot.product_mid}, Seller: ${adSlot.seller_mid}`);
+          console.log(`Total Results: ${searchResponse.results.length}`);
+          console.log('\nFirst Item Full Data:', JSON.stringify(searchResponse.results[0], null, 2));
+          console.log('\nFirst 5 Items Summary:', searchResponse.results.slice(0, 5).map((item: any) => ({
+            productId: item.productId,
+            title: item.title,
+            mallName: item.mallName,
+            lprice: item.lprice,
+            link: item.link
+          })));
+          console.log('=========================\n');
+        }
+        
         allResults.push(...searchResponse.results);
 
         // API 사용 로그

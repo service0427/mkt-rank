@@ -1,4 +1,7 @@
 import dotenv from 'dotenv';
+// 환경변수 로드 - import 직후에 바로 실행!
+dotenv.config();
+
 import cron from 'node-cron';
 import { adSlotsConfig } from './config/ad-slots.config';
 import { 
@@ -10,9 +13,6 @@ import {
 import { closeMySQLPool } from './database/mysql.client';
 import { pgPool } from './db/local-postgres';
 import { logger } from './utils/logger';
-
-// 환경변수 로드
-dotenv.config();
 
 // 프로세스 정보
 const processInfo = {
