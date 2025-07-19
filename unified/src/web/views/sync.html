@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>동기화 관리 - 통합 시스템</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f5f5f7;
+            color: #1d1d1f;
+        }
+        
+        .header {
+            background-color: #fff;
+            border-bottom: 1px solid #e5e5e7;
+            padding: 1rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .nav {
+            display: flex;
+            gap: 2rem;
+            margin-top: 1rem;
+        }
+        
+        .nav a {
+            color: #06c;
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            transition: background-color 0.2s;
+        }
+        
+        .nav a:hover, .nav a.active {
+            background-color: #f5f5f7;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+        
+        .sync-status {
+            background: #fff;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+        }
+        
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-top: 1.5rem;
+        }
+        
+        .status-item {
+            text-align: center;
+        }
+        
+        .status-value {
+            font-size: 2rem;
+            font-weight: 600;
+            color: #06c;
+        }
+        
+        .status-label {
+            color: #6e6e73;
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+        }
+        
+        .sync-controls {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        
+        .btn {
+            background-color: #06c;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        .btn:hover {
+            background-color: #0051a8;
+        }
+        
+        .btn-secondary {
+            background-color: #6e6e73;
+        }
+        
+        .btn-secondary:hover {
+            background-color: #515154;
+        }
+        
+        .sync-logs {
+            background: #fff;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+        
+        .table th {
+            text-align: left;
+            padding: 0.75rem;
+            border-bottom: 2px solid #e5e5e7;
+            color: #6e6e73;
+            font-weight: 500;
+        }
+        
+        .table td {
+            padding: 0.75rem;
+            border-bottom: 1px solid #e5e5e7;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 16px;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+        
+        .status-running {
+            background-color: #dbeafe;
+            color: #1e40af;
+        }
+        
+        .status-success {
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+        
+        .status-failed {
+            background-color: #fee2e2;
+            color: #991b1b;
+        }
+        
+        .status-partial {
+            background-color: #fef3c7;
+            color: #92400e;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background-color: #e5e5e7;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 0.5rem;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background-color: #06c;
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <h1>동기화 관리</h1>
+        <nav class="nav">
+            <a href="/">대시보드</a>
+            <a href="/services">서비스 관리</a>
+            <a href="/keywords">키워드 검색</a>
+            <a href="/sync" class="active">동기화</a>
+            <a href="/rankings">순위 모니터</a>
+            <a href="/api-keys">API 키</a>
+            <a href="/settings">설정</a>
+        </nav>
+    </header>
+
+    <div class="container">
+        <div class="sync-controls">
+            <button class="btn" onclick="startFullSync()">전체 동기화</button>
+            <button class="btn btn-secondary" onclick="refreshStatus()">상태 새로고침</button>
+        </div>
+
+        <div class="sync-status">
+            <h2>동기화 상태</h2>
+            <div class="status-grid">
+                <div class="status-item">
+                    <div class="status-value" id="activeJobs">0</div>
+                    <div class="status-label">실행 중인 작업</div>
+                </div>
+                <div class="status-item">
+                    <div class="status-value" id="completedToday">0</div>
+                    <div class="status-label">오늘 완료된 작업</div>
+                </div>
+                <div class="status-item">
+                    <div class="status-value" id="failedToday">0</div>
+                    <div class="status-label">오늘 실패한 작업</div>
+                </div>
+                <div class="status-item">
+                    <div class="status-value" id="nextSync">-</div>
+                    <div class="status-label">다음 예정 동기화</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="sync-logs">
+            <h2>동기화 로그</h2>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>시작 시간</th>
+                        <th>서비스</th>
+                        <th>유형</th>
+                        <th>방향</th>
+                        <th>진행률</th>
+                        <th>성공/전체</th>
+                        <th>상태</th>
+                        <th>소요 시간</th>
+                    </tr>
+                </thead>
+                <tbody id="syncLogsTable">
+                    <tr>
+                        <td colspan="8" style="text-align: center; color: #6e6e73;">로딩 중...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // Load sync status
+        async function loadSyncStatus() {
+            try {
+                const response = await fetch('/api/sync/status');
+                const data = await response.json();
+                
+                if (data.success) {
+                    updateStatus(data.data);
+                }
+                
+                // Load sync logs
+                const logsResponse = await fetch('/api/sync/logs?limit=20');
+                const logsData = await logsResponse.json();
+                
+                if (logsData.success) {
+                    updateLogsTable(logsData.data || []);
+                } else {
+                    updateLogsTable([]);
+                }
+            } catch (error) {
+                console.error('동기화 상태 로드 실패:', error);
+                updateLogsTable([]);
+            }
+        }
+        
+        function updateStatus(status) {
+            document.getElementById('activeJobs').textContent = status.activeJobs || 0;
+            document.getElementById('completedToday').textContent = status.completedToday || 0;
+            document.getElementById('failedToday').textContent = status.failedToday || 0;
+            document.getElementById('nextSync').textContent = formatNextSync(status.nextSync);
+        }
+        
+        function updateLogsTable(logs) {
+            const tbody = document.getElementById('syncLogsTable');
+            
+            if (logs.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: #6e6e73;">동기화 로그가 없습니다</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = logs.map(log => `
+                <tr>
+                    <td>${formatDate(log.started_at)}</td>
+                    <td>${log.service_name || log.service_id}</td>
+                    <td>${translateSyncType(log.sync_type)}</td>
+                    <td>${translateDirection(log.sync_direction)}</td>
+                    <td>
+                        ${log.status === 'running' ? 
+                            `<div class="progress-bar">
+                                <div class="progress-fill" style="width: ${calculateProgress(log)}%"></div>
+                            </div>` : 
+                            '완료'
+                        }
+                    </td>
+                    <td>${log.success_records || 0}/${log.total_records || 0}</td>
+                    <td>
+                        <span class="status-badge status-${log.status}">
+                            ${translateStatus(log.status)}
+                        </span>
+                    </td>
+                    <td>${calculateDuration(log.started_at, log.completed_at)}</td>
+                </tr>
+            `).join('');
+        }
+        
+        function translateSyncType(type) {
+            const types = {
+                'full': '전체',
+                'incremental': '증분',
+                'manual': '수동'
+            };
+            return types[type] || type;
+        }
+        
+        function translateDirection(direction) {
+            const directions = {
+                'import': '가져오기',
+                'export': '내보내기',
+                'bidirectional': '양방향'
+            };
+            return directions[direction] || direction;
+        }
+        
+        function translateStatus(status) {
+            const statuses = {
+                'running': '실행 중',
+                'success': '성공',
+                'failed': '실패',
+                'partial': '부분 성공'
+            };
+            return statuses[status] || status;
+        }
+        
+        function calculateProgress(log) {
+            if (log.total_records === 0) return 0;
+            return Math.round((log.success_records / log.total_records) * 100);
+        }
+        
+        function calculateDuration(start, end) {
+            if (!start) return '-';
+            const startTime = new Date(start);
+            const endTime = end ? new Date(end) : new Date();
+            const diff = endTime - startTime;
+            
+            if (diff < 1000) return '< 1초';
+            if (diff < 60000) return Math.floor(diff / 1000) + '초';
+            if (diff < 3600000) return Math.floor(diff / 60000) + '분';
+            return Math.floor(diff / 3600000) + '시간';
+        }
+        
+        function formatDate(dateString) {
+            if (!dateString) return '-';
+            return new Date(dateString).toLocaleString('ko-KR');
+        }
+        
+        function formatNextSync(dateString) {
+            if (!dateString) return '예정 없음';
+            const date = new Date(dateString);
+            const now = new Date();
+            const diff = date - now;
+            
+            if (diff < 0) return '곧 시작';
+            if (diff < 60000) return Math.floor(diff / 1000) + '초 후';
+            if (diff < 3600000) return Math.floor(diff / 60000) + '분 후';
+            return Math.floor(diff / 3600000) + '시간 후';
+        }
+        
+        async function startFullSync() {
+            if (!confirm('모든 서비스의 전체 동기화를 시작하시겠습니까?')) return;
+            
+            try {
+                const response = await fetch('/api/sync/trigger/all', {
+                    method: 'POST'
+                });
+                
+                const result = await response.json();
+                alert(result.success ? '전체 동기화가 시작되었습니다!' : '동기화 시작 실패: ' + result.error);
+                
+                if (result.success) {
+                    loadSyncStatus();
+                }
+            } catch (error) {
+                alert('동기화 시작 오류: ' + error.message);
+            }
+        }
+        
+        function refreshStatus() {
+            loadSyncStatus();
+        }
+        
+        // Load on page load
+        loadSyncStatus();
+        
+        // Auto refresh every 5 seconds
+        setInterval(loadSyncStatus, 5000);
+    </script>
+</body>
+</html>
