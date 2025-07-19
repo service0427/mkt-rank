@@ -18,7 +18,14 @@
     "lint": "eslint src --ext .ts",
     "typecheck": "tsc --noEmit",
     "redis:start": "docker-compose up -d redis",
-    "redis:stop": "docker-compose down"
+    "redis:stop": "docker-compose down",
+    "pm2:start": "pm2 start ecosystem.config.js",
+    "pm2:stop": "pm2 stop ecosystem.config.js",
+    "pm2:restart": "pm2 restart ecosystem.config.js",
+    "pm2:logs": "pm2 logs",
+    "pm2:status": "pm2 list",
+    "pm2:start:ad-slots": "pm2 start ecosystem.config.js --only mkt-rank-ad-slots",
+    "pm2:stop:ad-slots": "pm2 stop mkt-rank-ad-slots"
   },
   "keywords": [
     "naver",
@@ -35,6 +42,7 @@
     "@types/cors": "^2.8.19",
     "@types/cron": "^2.0.1",
     "@types/express": "^5.0.3",
+    "@types/mysql": "^2.15.27",
     "@types/pg": "^8.15.4",
     "axios": "^1.6.5",
     "bull": "^4.16.5",
@@ -43,6 +51,7 @@
     "date-fns": "^4.1.0",
     "dotenv": "^16.3.1",
     "express": "^5.1.0",
+    "mysql2": "^3.14.2",
     "node-cron": "^3.0.3",
     "pg": "^8.16.2",
     "winston": "^3.11.0"
