@@ -139,9 +139,8 @@ class RankingCollector {
       }
     }
 
-    // Update hourly and daily aggregations for each product
-    const topProducts = rankings.slice(0, 10); // Top 10 products
-    for (const ranking of topProducts) {
+    // Update hourly and daily aggregations for all products
+    for (const ranking of rankings) {
       await this.updateHourlyRanking(keyword, ranking, platform);
       await this.updateDailyRanking(keyword, ranking, platform);
     }
