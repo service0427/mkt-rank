@@ -232,11 +232,11 @@ export class MySQLAdSlotsSyncService {
 // 단독 실행 시
 if (require.main === module) {
   const mysqlConfig = {
-    host: process.env.TOP_MYSQL_HOST || 'localhost',
-    port: parseInt(process.env.TOP_MYSQL_PORT || '3306'),
-    user: process.env.TOP_MYSQL_USER || 'root',
-    password: process.env.TOP_MYSQL_PASSWORD || '',
-    database: process.env.TOP_MYSQL_DATABASE || 'top_db'
+    host: process.env.MYSQL_HOST || 'localhost',
+    port: parseInt(process.env.MYSQL_PORT || '3306'),
+    user: process.env.MYSQL_USER || 'root',
+    password: process.env.MYSQL_PASSWORD || '',
+    database: process.env.MYSQL_DATABASE || 'magic_db'
   };
 
   const syncService = new MySQLAdSlotsSyncService(mysqlConfig);
