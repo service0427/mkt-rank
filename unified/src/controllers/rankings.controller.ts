@@ -124,33 +124,57 @@ export async function getRankingHistory(keyword_id: string, days: number = 7) {
 
 export async function getKeywordStats(keyword_id: string) {
   try {
-    // Get today's stats
-    const [todayStats] = await query<any>(`
+    // Get current rank and previous rank
+    const [currentRank] = await query<any>(`
       SELECT 
-        COUNT(DISTINCT product_id) as product_count,
-        MIN(rank) as best_rank,
-        MAX(rank) as worst_rank,
-        AVG(rank) as avg_rank
+        rank as current_rank,
+        previous_rank,
+        rank_change,
+        collected_at
       FROM unified_rankings_current
-      WHERE keyword_id = $1
+      WHERE keyword_id = $1 AND platform = 'naver_shopping'
+      ORDER BY rank ASC
+      LIMIT 1
     `, [keyword_id]);
     
     // Get 7 day trend
     const [weekStats] = await query<any>(`
       SELECT 
-        AVG(avg_rank) as week_avg_rank,
-        MIN(min_rank) as week_best_rank
+        ROUND(AVG(avg_rank), 1) as avg_rank,
+        MIN(min_rank) as best_rank
       FROM unified_rankings_daily
-      WHERE keyword_id = $1 AND date >= CURRENT_DATE - INTERVAL '7 days'
+      WHERE keyword_id = $1 
+        AND platform = 'naver_shopping'
+        AND date >= CURRENT_DATE - INTERVAL '7 days'
     `, [keyword_id]);
     
+    if (!currentRank && !weekStats) {
+      return {
+        current_rank: '-',
+        previous_rank: '-',
+        best_rank: '-',
+        avg_rank: '-',
+        rank_change: 0
+      };
+    }
+    
     return {
-      ...todayStats,
-      ...weekStats
+      current_rank: currentRank?.current_rank || '-',
+      previous_rank: currentRank?.previous_rank || '-',
+      best_rank: weekStats?.best_rank || currentRank?.current_rank || '-',
+      avg_rank: weekStats?.avg_rank || currentRank?.current_rank || '-',
+      rank_change: currentRank?.rank_change || 0,
+      collected_at: currentRank?.collected_at
     };
   } catch (error) {
     console.error('Error fetching keyword stats:', error);
-    return null;
+    return {
+      current_rank: '-',
+      previous_rank: '-',
+      best_rank: '-',
+      avg_rank: '-',
+      rank_change: 0
+    };
   }
 }
 

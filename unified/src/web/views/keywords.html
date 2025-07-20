@@ -175,13 +175,14 @@
                         <th>서비스</th>
                         <th>타입</th>
                         <th>검색량</th>
+                        <th>현재 순위</th>
                         <th>마지막 업데이트</th>
                         <th>작업</th>
                     </tr>
                 </thead>
                 <tbody id="keywordsTableBody">
                     <tr>
-                        <td colspan="6" style="text-align: center; color: #6e6e73;">로딩 중...</td>
+                        <td colspan="7" style="text-align: center; color: #6e6e73;">로딩 중...</td>
                     </tr>
                 </tbody>
             </table>
@@ -248,7 +249,7 @@
             const tbody = document.getElementById('keywordsTableBody');
             
             if (keywords.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #6e6e73;">키워드가 없습니다</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: #6e6e73;">키워드가 없습니다</td></tr>';
                 return;
             }
             
@@ -258,7 +259,12 @@
                     <td><span class="service-badge">${keyword.service_name || '알 수 없음'}</span></td>
                     <td>${keyword.type || '-'}</td>
                     <td>${keyword.total_count ? keyword.total_count.toLocaleString() : '-'}</td>
-                    <td>${formatDate(keyword.updated_at || keyword.created_at)}</td>
+                    <td>
+                        ${keyword.current_rank 
+                            ? `<strong>${keyword.current_rank}위</strong>` 
+                            : '<span style="color: #6e6e73;">-</span>'}
+                    </td>
+                    <td>${formatDate(keyword.rank_collected_at || keyword.updated_at || keyword.created_at)}</td>
                     <td>
                         <div class="keyword-actions">
                             <button class="btn btn-small btn-secondary" onclick="editKeyword('${keyword.id}')">수정</button>
