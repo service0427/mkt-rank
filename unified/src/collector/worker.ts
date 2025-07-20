@@ -139,6 +139,9 @@ class RankingCollector {
       }
     }
 
+    // Update current rankings table
+    await this.updateCurrentRankings(keyword, rankings, platform);
+    
     // Update hourly and daily aggregations for all products
     for (const ranking of rankings) {
       await this.updateHourlyRanking(keyword, ranking, platform);
@@ -146,6 +149,72 @@ class RankingCollector {
     }
     
     console.log(`Saved ${rankings.length} rankings for ${keyword.keyword} on ${platform}`);
+  }
+
+  private async updateCurrentRankings(keyword: UnifiedKeyword, rankings: any[], platform: string) {
+    // 기존 순위 조회 (이전 순위 계산용)
+    const existingRanks = await query<any>(`
+      SELECT product_id, rank 
+      FROM unified_rankings_current 
+      WHERE keyword_id = $1 AND platform = $2
+    `, [keyword.id, platform]);
+
+    const rankMap = new Map(existingRanks.map(r => [r.product_id, r.rank]));
+
+    // 각 순위 업데이트 또는 삽입
+    for (const ranking of rankings) {
+      const productId = ranking.metadata?.productId || '';
+      const previousRank = rankMap.get(productId);
+
+      await query(`
+        INSERT INTO unified_rankings_current (
+          keyword_id, keyword, platform, product_id,
+          rank, previous_rank, rank_change,
+          title, link, image, lprice, mall_name,
+          brand, category1, collected_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+        ON CONFLICT (keyword_id, product_id, platform)
+        DO UPDATE SET
+          rank = $5,
+          previous_rank = unified_rankings_current.rank,
+          rank_change = unified_rankings_current.rank - $5,
+          title = $8,
+          link = $9,
+          image = $10,
+          lprice = $11,
+          mall_name = $12,
+          brand = $13,
+          category1 = $14,
+          collected_at = $15
+      `, [
+        keyword.id,
+        keyword.keyword,
+        platform,
+        productId,
+        ranking.rank,
+        previousRank || null,
+        previousRank ? previousRank - ranking.rank : null,
+        ranking.metadata?.title || '',
+        ranking.metadata?.link || ranking.metadata?.href || '',
+        ranking.metadata?.image || ranking.metadata?.thumbnail || '',
+        ranking.metadata?.lprice || 0,
+        ranking.metadata?.mallName || (platform === 'coupang' ? '쿠팡' : ''),
+        ranking.metadata?.brand || '',
+        ranking.metadata?.category1 || '',
+        new Date()
+      ]);
+    }
+
+    // 300위 밖으로 밀려난 상품 제거
+    await query(`
+      DELETE FROM unified_rankings_current
+      WHERE keyword_id = $1 
+      AND platform = $2
+      AND product_id NOT IN (
+        SELECT product_id 
+        FROM unnest($3::text[]) AS product_id
+      )
+    `, [keyword.id, platform, rankings.map(r => r.metadata?.productId || '')]);
   }
 
   private async updateHourlyRanking(keyword: UnifiedKeyword, ranking: RankingData, platform: string) {
