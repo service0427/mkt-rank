@@ -81,3 +81,9 @@ curl -X POST http://localhost:3001/api/keys/validate \
 ```
 http://localhost:3001/api-keys
 ```
+
+## Unified 시스템 배포
+```bash
+cd ~/mkt-rank/unified
+pm2 restart unified-web
+```
