@@ -53,4 +53,32 @@ router.get('/stats/:keyword_id', async (req: Request, res: Response) => {
   }
 });
 
+// GET /api/rankings/product-stats/:keyword_id/:product_id - Get product ranking statistics
+router.get('/product-stats/:keyword_id/:product_id', async (req: Request, res: Response) => {
+  try {
+    const stats = await rankingsController.getProductStats(
+      req.params.keyword_id,
+      req.params.product_id
+    );
+    res.json({ success: true, data: stats });
+  } catch (error) {
+    res.status(500).json({ success: false, error: 'Failed to fetch product stats' });
+  }
+});
+
+// GET /api/rankings/product-history/:keyword_id/:product_id - Get product ranking history
+router.get('/product-history/:keyword_id/:product_id', async (req: Request, res: Response) => {
+  try {
+    const { days = 7 } = req.query;
+    const history = await rankingsController.getProductRankingHistory(
+      req.params.keyword_id,
+      req.params.product_id,
+      parseInt(days as string)
+    );
+    res.json({ success: true, data: history });
+  } catch (error) {
+    res.status(500).json({ success: false, error: 'Failed to fetch product ranking history' });
+  }
+});
+
 export { router as rankingsRouter };

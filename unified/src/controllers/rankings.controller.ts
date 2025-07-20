@@ -178,6 +178,106 @@ export async function getKeywordStats(keyword_id: string) {
   }
 }
 
+export async function getProductStats(keyword_id: string, product_id: string) {
+  try {
+    // Get current rank and product info
+    const [currentData] = await query<any>(`
+      SELECT 
+        rank as current_rank,
+        previous_rank,
+        rank_change,
+        collected_at,
+        title,
+        lprice,
+        mall_name
+      FROM unified_rankings_current
+      WHERE keyword_id = $1 
+        AND product_id = $2
+        AND platform = 'naver_shopping'
+      LIMIT 1
+    `, [keyword_id, product_id]);
+    
+    // Get 7 day stats
+    const [weekStats] = await query<any>(`
+      SELECT 
+        ROUND(AVG(avg_rank), 1) as avg_rank,
+        MIN(min_rank) as best_rank
+      FROM unified_rankings_daily
+      WHERE keyword_id = $1 
+        AND product_id = $2
+        AND platform = 'naver_shopping'
+        AND date >= CURRENT_DATE - INTERVAL '7 days'
+    `, [keyword_id, product_id]);
+    
+    if (!currentData && !weekStats) {
+      return null;
+    }
+    
+    return {
+      current_rank: currentData?.current_rank || '-',
+      previous_rank: currentData?.previous_rank || '-',
+      best_rank: weekStats?.best_rank || currentData?.current_rank || '-',
+      avg_rank: weekStats?.avg_rank || currentData?.current_rank || '-',
+      rank_change: currentData?.rank_change || 0,
+      collected_at: currentData?.collected_at,
+      title: currentData?.title,
+      lprice: currentData?.lprice,
+      mall_name: currentData?.mall_name
+    };
+  } catch (error) {
+    console.error('Error fetching product stats:', error);
+    return null;
+  }
+}
+
+export async function getProductRankingHistory(keyword_id: string, product_id: string, days: number = 7) {
+  try {
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+    
+    // Get hourly data for recent days
+    if (days <= 7) {
+      const history = await query<any>(`
+        SELECT 
+          hour,
+          avg_rank,
+          min_rank,
+          max_rank,
+          sample_count
+        FROM unified_rankings_hourly
+        WHERE keyword_id = $1 
+          AND product_id = $2
+          AND platform = 'naver_shopping'
+          AND hour >= $3
+        ORDER BY hour DESC
+      `, [keyword_id, product_id, startDate]);
+      
+      return history;
+    } else {
+      // Get daily data for longer periods
+      const history = await query<any>(`
+        SELECT 
+          date,
+          avg_rank,
+          min_rank,
+          max_rank,
+          sample_count
+        FROM unified_rankings_daily
+        WHERE keyword_id = $1 
+          AND product_id = $2
+          AND platform = 'naver_shopping'
+          AND date >= $3
+        ORDER BY date DESC
+      `, [keyword_id, product_id, startDate]);
+      
+      return history;
+    }
+  } catch (error) {
+    console.error('Error fetching product ranking history:', error);
+    return [];
+  }
+}
+
 export async function triggerCollection(_service_id?: string, _keyword_ids?: string[]) {
   // This would trigger the collector worker
   // For now, just return success

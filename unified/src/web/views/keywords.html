@@ -175,8 +175,8 @@
                         <th>서비스</th>
                         <th>타입</th>
                         <th>검색량</th>
-                        <th>현재 순위</th>
-                        <th>마지막 업데이트</th>
+                        <th>수집 데이터</th>
+                        <th>마지막 수집</th>
                         <th>작업</th>
                     </tr>
                 </thead>
@@ -260,11 +260,11 @@
                     <td>${keyword.type || '-'}</td>
                     <td>${keyword.total_count ? keyword.total_count.toLocaleString() : '-'}</td>
                     <td>
-                        ${keyword.current_rank 
-                            ? `<strong>${keyword.current_rank}위</strong>` 
-                            : '<span style="color: #6e6e73;">-</span>'}
+                        ${keyword.ranking_count 
+                            ? `<strong>${keyword.ranking_count}개</strong>` 
+                            : '<span style="color: #6e6e73;">0개</span>'}
                     </td>
-                    <td>${formatDate(keyword.rank_collected_at || keyword.updated_at || keyword.created_at)}</td>
+                    <td>${formatDate(keyword.last_collected || keyword.updated_at || keyword.created_at)}</td>
                     <td>
                         <div class="keyword-actions">
                             <button class="btn btn-small btn-secondary" onclick="editKeyword('${keyword.id}')">수정</button>

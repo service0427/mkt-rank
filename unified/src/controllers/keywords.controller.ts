@@ -46,21 +46,19 @@ export async function getKeywords(filters: any = {}) {
     
     // Get keywords with service info and current rankings
     params.push(limit, offset);
-    const keywords = await query<UnifiedKeyword & { service_name: string; current_rank?: number; rank_collected_at?: Date }>(`
+    const keywords = await query<UnifiedKeyword & { service_name: string; ranking_count?: number; last_collected?: Date }>(`
       SELECT 
         k.*, 
         s.service_name,
-        r.rank as current_rank,
-        r.collected_at as rank_collected_at
+        r.ranking_count,
+        r.last_collected
       FROM unified_search_keywords k
       LEFT JOIN unified_services s ON k.service_id = s.service_id
       LEFT JOIN LATERAL (
-        SELECT rank, collected_at 
+        SELECT COUNT(*) as ranking_count, MAX(collected_at) as last_collected 
         FROM unified_rankings_current 
         WHERE keyword_id = k.id 
         AND platform = 'naver_shopping'
-        ORDER BY collected_at DESC 
-        LIMIT 1
       ) r ON true
       ${whereClause}
       ORDER BY k.created_at DESC
