@@ -1,6 +1,5 @@
 import axios, { AxiosInstance, AxiosError } from 'axios';
 import { query } from '../../db/postgres';
-import crypto from 'crypto';
 
 interface NaverSearchItem {
   title: string;
@@ -41,26 +40,6 @@ export class NaverShoppingProvider {
   private apiUrl = 'https://openapi.naver.com/v1/search/shop.json';
   private currentKeyIndex = 0;
   private apiKeys: ApiKey[] = [];
-  private ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || 'default-encryption-key-change-this';
-
-  // 복호화 함수
-  private decrypt(text: string): string {
-    try {
-      const algorithm = 'aes-256-ctr';
-      const decipher = crypto.createDecipheriv(
-        algorithm, 
-        crypto.scryptSync(this.ENCRYPTION_KEY, 'salt', 32), 
-        Buffer.alloc(16, 0)
-      );
-      let decrypted = decipher.update(text, 'hex', 'utf8');
-      decrypted += decipher.final('utf8');
-      return decrypted;
-    } catch (error) {
-      console.error('Decryption error:', error);
-      // 암호화되지 않은 텍스트일 수 있으므로 원본 반환
-      return text;
-    }
-  }
 
   async getRankings(keyword: string, maxPages: number = 3) {
     const rankings = [];
@@ -171,7 +150,7 @@ export class NaverShoppingProvider {
       baseURL: this.apiUrl,
       headers: {
         'X-Naver-Client-Id': apiKey.client_id,
-        'X-Naver-Client-Secret': this.decrypt(apiKey.client_secret),
+        'X-Naver-Client-Secret': apiKey.client_secret,
       },
       timeout: 30000,
     });
