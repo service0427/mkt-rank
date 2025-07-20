@@ -6,15 +6,97 @@
     <title>순위 모니터 - 통합 시스템</title>
     <link rel="stylesheet" href="/public/css/common.css">
     <style>
-        .filters {
+        .main-layout {
+            display: grid;
+            grid-template-columns: 400px 1fr;
+            gap: 1.5rem;
+            height: calc(100vh - 180px);
+        }
+        
+        .left-panel {
             background: #fff;
-            padding: 1.5rem;
             border-radius: 12px;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-            margin-bottom: 2rem;
             display: flex;
-            gap: 1rem;
-            flex-wrap: wrap;
+            flex-direction: column;
+        }
+        
+        .right-panel {
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            padding: 1.5rem;
+            overflow-y: auto;
+        }
+        
+        .keyword-list-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid #e5e5e7;
+        }
+        
+        .keyword-list {
+            flex: 1;
+            overflow-y: auto;
+        }
+        
+        .keyword-item {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid #e5e5e7;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .keyword-item:hover {
+            background-color: #f5f5f7;
+        }
+        
+        .keyword-item.active {
+            background-color: #e8f2ff;
+            border-left: 3px solid #06c;
+        }
+        
+        .keyword-info {
+            flex: 1;
+        }
+        
+        .keyword-name {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+        
+        .keyword-meta {
+            font-size: 0.875rem;
+            color: #6e6e73;
+        }
+        
+        .keyword-rank {
+            text-align: right;
+        }
+        
+        .current-rank {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+        
+        .update-time {
+            font-size: 0.75rem;
+            color: #6e6e73;
+        }
+        
+        .search-box {
+            padding: 1rem;
+            border-bottom: 1px solid #e5e5e7;
+        }
+        
+        .search-input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #e5e5e7;
+            border-radius: 8px;
+            font-size: 1rem;
         }
         
         .filter-select {
@@ -22,16 +104,8 @@
             border: 1px solid #e5e5e7;
             border-radius: 8px;
             font-size: 1rem;
-            min-width: 150px;
-        }
-        
-        .search-input {
-            flex: 1;
-            min-width: 200px;
-            padding: 0.75rem;
-            border: 1px solid #e5e5e7;
-            border-radius: 8px;
-            font-size: 1rem;
+            width: 100%;
+            margin-top: 0.5rem;
         }
         
         .btn {
@@ -49,28 +123,19 @@
             background-color: #0051a8;
         }
         
-        .rankings-grid {
-            display: grid;
-            gap: 1.5rem;
-        }
-        
-        .ranking-card {
-            background: #fff;
-            padding: 1.5rem;
-            border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        .ranking-detail {
+            text-align: center;
+            padding: 3rem;
+            color: #6e6e73;
         }
         
         .ranking-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 1rem;
-        }
-        
-        .keyword-name {
-            font-size: 1.25rem;
-            font-weight: 600;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid #e5e5e7;
         }
         
         .platform-badge {
@@ -93,24 +158,26 @@
         
         .ranking-info {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 1rem;
-            margin-bottom: 1rem;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
         }
         
         .info-item {
-            display: flex;
-            flex-direction: column;
+            background: #f5f5f7;
+            padding: 1.5rem;
+            border-radius: 8px;
+            text-align: center;
         }
         
         .info-label {
             color: #6e6e73;
             font-size: 0.875rem;
-            margin-bottom: 0.25rem;
+            margin-bottom: 0.5rem;
         }
         
         .info-value {
-            font-size: 1.5rem;
+            font-size: 2rem;
             font-weight: 600;
         }
         
@@ -118,7 +185,7 @@
             display: inline-flex;
             align-items: center;
             gap: 0.25rem;
-            font-size: 0.875rem;
+            font-size: 1rem;
             margin-left: 0.5rem;
         }
         
@@ -135,8 +202,8 @@
         }
         
         .chart-container {
-            height: 200px;
-            margin-top: 1rem;
+            height: 400px;
+            margin-top: 2rem;
             border: 1px solid #e5e5e7;
             border-radius: 8px;
             padding: 1rem;
@@ -144,6 +211,7 @@
             align-items: center;
             justify-content: center;
             color: #6e6e73;
+            background: #f5f5f7;
         }
         
         .no-data {
@@ -168,135 +236,221 @@
     </header>
 
     <div class="container">
-        <div class="filters">
-            <select class="filter-select" id="platformFilter">
-                <option value="">모든 플랫폼</option>
-                <option value="naver_shopping">네이버 쇼핑</option>
-                <option value="coupang">쿠팡</option>
-            </select>
-            <select class="filter-select" id="serviceFilter">
-                <option value="">모든 서비스</option>
-            </select>
-            <input type="text" class="search-input" id="keywordSearch" placeholder="키워드 검색...">
-            <button class="btn" onclick="searchRankings()">검색</button>
-        </div>
+        <div class="main-layout">
+            <!-- 왼쪽 패널: 키워드 리스트 -->
+            <div class="left-panel">
+                <div class="search-box">
+                    <input type="text" class="search-input" id="keywordSearch" placeholder="키워드 검색...">
+                    <select class="filter-select" id="platformFilter">
+                        <option value="">모든 플랫폼</option>
+                        <option value="naver_shopping">네이버 쇼핑</option>
+                        <option value="coupang">쿠팡</option>
+                    </select>
+                </div>
+                <div class="keyword-list-header">
+                    <h3>키워드 목록</h3>
+                </div>
+                <div class="keyword-list" id="keywordList">
+                    <div class="no-data">키워드를 로딩 중입니다...</div>
+                </div>
+            </div>
 
-        <div class="rankings-grid" id="rankingsGrid">
-            <div class="no-data">
-                순위 데이터를 로딩 중입니다...
+            <!-- 오른쪽 패널: 순위 상세 정보 -->
+            <div class="right-panel" id="rankingDetail">
+                <div class="ranking-detail">
+                    <p>왼쪽에서 키워드를 선택하세요</p>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
-        // Load services for filter
-        async function loadServices() {
-            try {
-                const response = await fetch('/api/services');
-                const data = await response.json();
-                
-                if (data.success) {
-                    const select = document.getElementById('serviceFilter');
-                    data.data.forEach(service => {
-                        const option = document.createElement('option');
-                        option.value = service.service_id;
-                        option.textContent = service.service_name;
-                        select.appendChild(option);
-                    });
-                }
-            } catch (error) {
-                console.error('서비스 로드 실패:', error);
-            }
-        }
+        let selectedKeywordId = null;
+        let keywordSearchTimeout = null;
 
-        // Search rankings
-        async function searchRankings() {
-            const params = new URLSearchParams({
-                platform: document.getElementById('platformFilter').value,
-                service_id: document.getElementById('serviceFilter').value,
-                keyword: document.getElementById('keywordSearch').value
-            });
-
-            try {
-                const response = await fetch(`/api/rankings?${params}`);
-                const data = await response.json();
-                
-                if (data.success) {
-                    displayRankings(data.data);
-                }
-            } catch (error) {
-                console.error('순위 검색 실패:', error);
-                displayRankings([]);
-            }
-        }
-
-        function displayRankings(rankings) {
-            const container = document.getElementById('rankingsGrid');
+        // Load keywords
+        async function loadKeywords() {
+            const search = document.getElementById('keywordSearch').value;
+            const platform = document.getElementById('platformFilter').value;
             
-            if (!rankings || rankings.length === 0) {
-                container.innerHTML = '<div class="no-data">검색 결과가 없습니다</div>';
+            try {
+                const params = new URLSearchParams({
+                    search: search,
+                    limit: '100'
+                });
+                
+                const response = await fetch(`/api/keywords?${params}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayKeywordList(data.data, platform);
+                }
+            } catch (error) {
+                console.error('키워드 로드 실패:', error);
+                displayKeywordList([]);
+            }
+        }
+
+        function displayKeywordList(keywords, platformFilter) {
+            const container = document.getElementById('keywordList');
+            
+            if (!keywords || keywords.length === 0) {
+                container.innerHTML = '<div class="no-data">키워드가 없습니다</div>';
                 return;
             }
             
-            // Group rankings by keyword
-            const groupedRankings = groupRankingsByKeyword(rankings);
+            // Filter by platform if needed
+            let filteredKeywords = keywords;
+            if (platformFilter) {
+                filteredKeywords = keywords.filter(k => {
+                    if (platformFilter === 'naver_shopping') {
+                        return k.type === 'shopping' || k.type === 'naver' || k.type === 'ad_slots';
+                    }
+                    return k.type === platformFilter;
+                });
+            }
             
-            container.innerHTML = Object.entries(groupedRankings).map(([keyword, data]) => `
-                <div class="ranking-card">
-                    <div class="ranking-header">
-                        <h3 class="keyword-name">${keyword}</h3>
-                        <span class="platform-badge platform-${data.platform === 'naver_shopping' ? 'naver' : 'coupang'}">
-                            ${data.platform === 'naver_shopping' ? '네이버' : '쿠팡'}
-                        </span>
+            container.innerHTML = filteredKeywords.map(keyword => `
+                <div class="keyword-item" data-keyword-id="${keyword.id}" onclick="selectKeyword('${keyword.id}')">
+                    <div class="keyword-info">
+                        <div class="keyword-name">${keyword.keyword}</div>
+                        <div class="keyword-meta">${keyword.service_name || '알 수 없음'}</div>
                     </div>
-                    <div class="ranking-info">
-                        <div class="info-item">
-                            <span class="info-label">현재 순위</span>
-                            <span class="info-value">
-                                ${data.current_rank || '-'}
-                                ${renderRankChange(data.rank_change)}
-                            </span>
+                    <div class="keyword-rank">
+                        <div class="current-rank">
+                            ${keyword.current_rank ? keyword.current_rank + '위' : '-'}
                         </div>
-                        <div class="info-item">
-                            <span class="info-label">이전 순위</span>
-                            <span class="info-value">${data.previous_rank || '-'}</span>
+                        <div class="update-time">
+                            ${formatDate(keyword.rank_collected_at || keyword.updated_at)}
                         </div>
-                        <div class="info-item">
-                            <span class="info-label">최고 순위</span>
-                            <span class="info-value">${data.best_rank || '-'}</span>
-                        </div>
-                        <div class="info-item">
-                            <span class="info-label">평균 순위</span>
-                            <span class="info-value">${data.avg_rank ? data.avg_rank.toFixed(1) : '-'}</span>
-                        </div>
-                    </div>
-                    <div class="info-item">
-                        <span class="info-label">마지막 수집</span>
-                        <span style="font-size: 0.875rem;">${formatDate(data.collected_at)}</span>
-                    </div>
-                    <div class="chart-container">
-                        순위 차트 (구현 예정)
                     </div>
                 </div>
             `).join('');
+            
+            // Select first keyword if none selected
+            if (!selectedKeywordId && filteredKeywords.length > 0) {
+                selectKeyword(filteredKeywords[0].id);
+            }
         }
 
-        function groupRankingsByKeyword(rankings) {
-            const grouped = {};
-            rankings.forEach(ranking => {
-                if (!grouped[ranking.keyword]) {
-                    grouped[ranking.keyword] = {
-                        platform: ranking.platform,
-                        current_rank: ranking.rank,
-                        previous_rank: ranking.previous_rank,
-                        rank_change: ranking.rank_change,
-                        best_rank: ranking.rank,
-                        avg_rank: ranking.rank,
-                        collected_at: ranking.collected_at
-                    };
-                }
+        async function selectKeyword(keywordId) {
+            selectedKeywordId = keywordId;
+            
+            // Update UI
+            document.querySelectorAll('.keyword-item').forEach(item => {
+                item.classList.remove('active');
             });
-            return grouped;
+            document.querySelector(`[data-keyword-id="${keywordId}"]`)?.classList.add('active');
+            
+            // Load ranking details
+            await loadRankingDetails(keywordId);
+        }
+
+        async function loadRankingDetails(keywordId) {
+            const container = document.getElementById('rankingDetail');
+            
+            try {
+                // Get keyword info
+                const keywordResponse = await fetch(`/api/keywords?search=${encodeURIComponent(keywordId)}&limit=1`);
+                const keywordData = await keywordResponse.json();
+                
+                if (!keywordData.success || keywordData.data.length === 0) {
+                    container.innerHTML = '<div class="ranking-detail"><p>키워드 정보를 찾을 수 없습니다</p></div>';
+                    return;
+                }
+                
+                const keyword = keywordData.data.find(k => k.id === keywordId);
+                if (!keyword) {
+                    container.innerHTML = '<div class="ranking-detail"><p>키워드 정보를 찾을 수 없습니다</p></div>';
+                    return;
+                }
+                
+                // Get ranking stats
+                const statsResponse = await fetch(`/api/rankings/stats/${keywordId}`);
+                const statsData = await statsResponse.json();
+                
+                let stats = {
+                    current_rank: '-',
+                    previous_rank: '-',
+                    best_rank: '-',
+                    avg_rank: '-',
+                    rank_change: 0
+                };
+                
+                if (statsData.success && statsData.data) {
+                    stats = statsData.data;
+                }
+                
+                container.innerHTML = `
+                    <div class="ranking-header">
+                        <div>
+                            <h2>${keyword.keyword}</h2>
+                            <p style="color: #6e6e73; margin-top: 0.5rem;">${keyword.service_name || '알 수 없음'}</p>
+                        </div>
+                        <span class="platform-badge platform-naver">네이버 쇼핑</span>
+                    </div>
+                    
+                    <div class="ranking-info">
+                        <div class="info-item">
+                            <div class="info-label">현재 순위</div>
+                            <div class="info-value">
+                                ${stats.current_rank}
+                                ${renderRankChange(stats.rank_change)}
+                            </div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">이전 순위</div>
+                            <div class="info-value">${stats.previous_rank}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">최고 순위</div>
+                            <div class="info-value">${stats.best_rank}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">평균 순위</div>
+                            <div class="info-value">${stats.avg_rank}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="chart-container">
+                        <canvas id="rankChart"></canvas>
+                    </div>
+                `;
+                
+                // Load chart data
+                await loadRankingChart(keywordId);
+                
+            } catch (error) {
+                console.error('순위 상세 정보 로드 실패:', error);
+                container.innerHTML = '<div class="ranking-detail"><p>순위 정보를 불러올 수 없습니다</p></div>';
+            }
+        }
+
+        async function loadRankingChart(keywordId) {
+            try {
+                const response = await fetch(`/api/rankings/history/${keywordId}?days=7`);
+                const data = await response.json();
+                
+                if (!data.success || !data.data || data.data.length === 0) {
+                    document.getElementById('rankChart').parentElement.innerHTML = '순위 차트 데이터가 없습니다';
+                    return;
+                }
+                
+                // Simple chart rendering (placeholder)
+                const canvas = document.getElementById('rankChart');
+                const ctx = canvas.getContext('2d');
+                canvas.width = canvas.parentElement.offsetWidth - 32;
+                canvas.height = 300;
+                
+                // Draw placeholder
+                ctx.fillStyle = '#6e6e73';
+                ctx.font = '14px -apple-system, BlinkMacSystemFont, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('순위 차트 (구현 예정)', canvas.width / 2, canvas.height / 2);
+                
+            } catch (error) {
+                console.error('차트 데이터 로드 실패:', error);
+            }
         }
 
         function renderRankChange(change) {
@@ -322,9 +476,20 @@
             return date.toLocaleDateString('ko-KR');
         }
 
+        // Event listeners
+        document.getElementById('keywordSearch').addEventListener('input', (e) => {
+            clearTimeout(keywordSearchTimeout);
+            keywordSearchTimeout = setTimeout(() => {
+                loadKeywords();
+            }, 300);
+        });
+
+        document.getElementById('platformFilter').addEventListener('change', () => {
+            loadKeywords();
+        });
+
         // Initialize
-        loadServices();
-        searchRankings();
+        loadKeywords();
     </script>
 </body>
 </html>

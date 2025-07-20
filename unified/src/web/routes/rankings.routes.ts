@@ -14,18 +14,13 @@ router.get('/', async (req: Request, res: Response) => {
   }
 });
 
-// GET /api/rankings/history - Get ranking history
-router.get('/history', async (req: Request, res: Response) => {
+// GET /api/rankings/history/:keyword_id - Get ranking history for a specific keyword
+router.get('/history/:keyword_id', async (req: Request, res: Response) => {
   try {
-    const { keyword_id, days = 7 } = req.query;
-    
-    if (!keyword_id) {
-      res.status(400).json({ success: false, error: 'keyword_id is required' });
-      return;
-    }
+    const { days = 7 } = req.query;
     
     const history = await rankingsController.getRankingHistory(
-      keyword_id as string, 
+      req.params.keyword_id, 
       parseInt(days as string)
     );
     
