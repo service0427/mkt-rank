@@ -1,16 +1,13 @@
 // Rankings API Routes
 import { Router, Request, Response } from 'express';
+import * as rankingsController from '../../controllers/rankings.controller';
 
 const router = Router();
 
 // GET /api/rankings - Get rankings with filters
-router.get('/', async (_req: Request, res: Response) => {
+router.get('/', async (req: Request, res: Response) => {
   try {
-    // const { platform, service_id, keyword } = req.query;
-    
-    // Mock data for now
-    const rankings: any[] = [];
-    
+    const rankings = await rankingsController.getCurrentRankings(req.query as any);
     res.json({ success: true, data: rankings });
   } catch (error) {
     res.status(500).json({ success: false, error: 'Failed to fetch rankings' });
@@ -18,12 +15,19 @@ router.get('/', async (_req: Request, res: Response) => {
 });
 
 // GET /api/rankings/history - Get ranking history
-router.get('/history', async (_req: Request, res: Response) => {
+router.get('/history', async (req: Request, res: Response) => {
   try {
-    // const { keyword_id, days = 7 } = req.query;
+    const { keyword_id, days = 7 } = req.query;
     
-    // Mock data
-    const history: any[] = [];
+    if (!keyword_id) {
+      res.status(400).json({ success: false, error: 'keyword_id is required' });
+      return;
+    }
+    
+    const history = await rankingsController.getRankingHistory(
+      keyword_id as string, 
+      parseInt(days as string)
+    );
     
     res.json({ success: true, data: history });
   } catch (error) {
@@ -32,17 +36,25 @@ router.get('/history', async (_req: Request, res: Response) => {
 });
 
 // POST /api/rankings/collect - Trigger ranking collection
-router.post('/collect', async (_req: Request, res: Response) => {
+router.post('/collect', async (req: Request, res: Response) => {
   try {
-    // const { service_id, keyword_ids } = req.body;
+    const { service_id, keyword_ids } = req.body;
     
-    res.json({ 
-      success: true, 
-      message: 'Ranking collection started',
-      job_id: `job_${Date.now()}`
-    });
+    const result = await rankingsController.triggerCollection(service_id, keyword_ids);
+    
+    res.json(result);
   } catch (error) {
     res.status(500).json({ success: false, error: 'Failed to start ranking collection' });
+  }
+});
+
+// GET /api/rankings/stats/:keyword_id - Get keyword statistics
+router.get('/stats/:keyword_id', async (req: Request, res: Response) => {
+  try {
+    const stats = await rankingsController.getKeywordStats(req.params.keyword_id);
+    res.json({ success: true, data: stats });
+  } catch (error) {
+    res.status(500).json({ success: false, error: 'Failed to fetch keyword stats' });
   }
 });
 
