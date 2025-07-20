@@ -52,6 +52,23 @@ module.exports = {
       log_file: 'logs/unified-collector-combined.log',
       time: true,
       merge_logs: true
+    },
+    {
+      name: 'unified-maintenance',
+      script: './dist/maintenance/worker.js',
+      instances: 1,
+      exec_mode: 'fork',
+      autorestart: true,
+      watch: false,
+      max_memory_restart: '256M',
+      env: {
+        NODE_ENV: 'production'
+      },
+      error_file: 'logs/unified-maintenance-error.log',
+      out_file: 'logs/unified-maintenance-out.log',
+      log_file: 'logs/unified-maintenance-combined.log',
+      time: true,
+      merge_logs: true
     }
   ]
 };

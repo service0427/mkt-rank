@@ -1,34 +1,8 @@
 import { Router, Request, Response } from 'express';
 import { query } from '../../db/postgres';
-import crypto from 'crypto';
 import axios from 'axios';
 
 const router = Router();
-
-// 암호화 키 (환경변수에서 가져오거나 기본값 사용)
-const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || 'default-encryption-key-change-this';
-
-// 간단한 암호화/복호화 함수
-function encrypt(text: string): string {
-  const algorithm = 'aes-256-ctr';
-  const cipher = crypto.createCipheriv(algorithm, crypto.scryptSync(ENCRYPTION_KEY, 'salt', 32), Buffer.alloc(16, 0));
-  let encrypted = cipher.update(text, 'utf8', 'hex');
-  encrypted += cipher.final('hex');
-  return encrypted;
-}
-
-function decrypt(text: string): string {
-  try {
-    const algorithm = 'aes-256-ctr';
-    const decipher = crypto.createDecipheriv(algorithm, crypto.scryptSync(ENCRYPTION_KEY, 'salt', 32), Buffer.alloc(16, 0));
-    let decrypted = decipher.update(text, 'hex', 'utf8');
-    decrypted += decipher.final('utf8');
-    return decrypted;
-  } catch (error) {
-    console.error('Decryption error:', error);
-    return '';
-  }
-}
 
 // API 키 목록 조회
 router.get('/', async (_req: Request, res: Response) => {
@@ -92,15 +66,13 @@ router.post('/', async (req: Request, res: Response) => {
       return;
     }
 
-    // 암호화하여 저장
-    const encryptedSecret = encrypt(client_secret);
-
+    // 평문으로 저장
     const [newKey] = await query(`
       INSERT INTO unified_api_keys (
         provider, client_id, client_secret, is_active
       ) VALUES ($1, $2, $3, true)
       RETURNING key_id, provider, client_id, is_active, created_at
-    `, [provider, client_id, encryptedSecret]);
+    `, [provider, client_id, client_secret]);
 
     res.json({
       success: true,
@@ -185,7 +157,7 @@ router.post('/:id/validate', async (req: Request, res: Response) => {
       return;
     }
 
-    const decryptedSecret = decrypt(key.client_secret);
+    const decryptedSecret = key.client_secret;
     
     // 위의 검증 로직 재사용
     const validateResponse = await axios.post('http://localhost:4000/api/keys/validate', {
@@ -223,7 +195,7 @@ router.get('/:id/secret', async (req: Request, res: Response) => {
       return;
     }
 
-    const decryptedSecret = decrypt(key.client_secret);
+    const decryptedSecret = key.client_secret;
 
     res.json({
       success: true,
@@ -322,7 +294,7 @@ export async function getActiveApiKey(provider: string): Promise<{ key_id: strin
       return {
         key_id: key.key_id,
         client_id: key.client_id,
-        client_secret: decrypt(key.client_secret)
+        client_secret: key.client_secret
       };
     }
     return null;
