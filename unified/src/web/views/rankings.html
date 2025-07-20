@@ -11,6 +11,7 @@
             grid-template-columns: 400px 1fr;
             gap: 1.5rem;
             height: calc(100vh - 180px);
+            overflow: hidden;
         }
         
         .left-panel {
@@ -21,12 +22,46 @@
             flex-direction: column;
         }
         
+        .mid-input-section {
+            padding: 1.5rem;
+            border-top: 1px solid #e5e5e7;
+            background: #f5f5f7;
+        }
+        
+        .mid-input-section h4 {
+            margin: 0 0 0.75rem 0;
+            font-size: 0.875rem;
+            color: #6e6e73;
+        }
+        
+        .mid-input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #e5e5e7;
+            border-radius: 8px;
+            font-size: 1rem;
+            margin-bottom: 0.75rem;
+        }
+        
+        .btn-primary {
+            width: 100%;
+            background-color: #06c;
+            color: white;
+        }
+        
+        .btn-primary:disabled {
+            background-color: #c7c7c7;
+            cursor: not-allowed;
+        }
+        
         .right-panel {
             background: #fff;
             border-radius: 12px;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
             padding: 1.5rem;
-            overflow-y: auto;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
         }
         
         .keyword-list-header {
@@ -253,6 +288,11 @@
                 <div class="keyword-list" id="keywordList">
                     <div class="no-data">키워드를 로딩 중입니다...</div>
                 </div>
+                <div class="mid-input-section">
+                    <h4>상품 ID (MID) 입력</h4>
+                    <input type="text" class="mid-input" id="midInput" placeholder="예: 82926898522" disabled>
+                    <button class="btn btn-primary" id="searchMidBtn" onclick="searchProductRanking()" disabled>순위 조회</button>
+                </div>
             </div>
 
             <!-- 오른쪽 패널: 순위 상세 정보 -->
@@ -266,6 +306,7 @@
 
     <script>
         let selectedKeywordId = null;
+        let selectedKeyword = null;
         let keywordSearchTimeout = null;
 
         // Load keywords
@@ -311,30 +352,26 @@
             }
             
             container.innerHTML = filteredKeywords.map(keyword => `
-                <div class="keyword-item" data-keyword-id="${keyword.id}" onclick="selectKeyword('${keyword.id}')">
+                <div class="keyword-item" data-keyword-id="${keyword.id}" data-keyword="${keyword.keyword}" onclick="selectKeyword('${keyword.id}', '${keyword.keyword}')">
                     <div class="keyword-info">
                         <div class="keyword-name">${keyword.keyword}</div>
                         <div class="keyword-meta">${keyword.service_name || '알 수 없음'}</div>
                     </div>
                     <div class="keyword-rank">
                         <div class="current-rank">
-                            ${keyword.current_rank ? keyword.current_rank + '위' : '-'}
+                            ${keyword.ranking_count ? keyword.ranking_count + '개' : '0개'}
                         </div>
                         <div class="update-time">
-                            ${formatDate(keyword.rank_collected_at || keyword.updated_at)}
+                            ${formatDate(keyword.last_collected || keyword.updated_at)}
                         </div>
                     </div>
                 </div>
             `).join('');
-            
-            // Select first keyword if none selected
-            if (!selectedKeywordId && filteredKeywords.length > 0) {
-                selectKeyword(filteredKeywords[0].id);
-            }
         }
 
-        async function selectKeyword(keywordId) {
+        function selectKeyword(keywordId, keyword) {
             selectedKeywordId = keywordId;
+            selectedKeyword = keyword;
             
             // Update UI
             document.querySelectorAll('.keyword-item').forEach(item => {
@@ -342,50 +379,51 @@
             });
             document.querySelector(`[data-keyword-id="${keywordId}"]`)?.classList.add('active');
             
-            // Load ranking details
-            await loadRankingDetails(keywordId);
+            // Enable MID input
+            document.getElementById('midInput').disabled = false;
+            document.getElementById('searchMidBtn').disabled = false;
+            
+            // Clear previous results
+            document.getElementById('rankingDetail').innerHTML = `
+                <div class="ranking-detail">
+                    <p>키워드 "${keyword}"가 선택되었습니다.<br>상품 ID(MID)를 입력하고 순위 조회를 눌러주세요.</p>
+                </div>
+            `;
         }
 
-        async function loadRankingDetails(keywordId) {
+        async function searchProductRanking() {
+            const mid = document.getElementById('midInput').value.trim();
+            if (!mid) {
+                alert('상품 ID(MID)를 입력해주세요.');
+                return;
+            }
+            
+            if (!selectedKeywordId) {
+                alert('키워드를 먼저 선택해주세요.');
+                return;
+            }
+            
             const container = document.getElementById('rankingDetail');
+            container.innerHTML = '<div class="ranking-detail"><p>로딩 중...</p></div>';
             
             try {
-                // Get keyword info
-                const keywordResponse = await fetch(`/api/keywords?search=${encodeURIComponent(keywordId)}&limit=1`);
-                const keywordData = await keywordResponse.json();
-                
-                if (!keywordData.success || keywordData.data.length === 0) {
-                    container.innerHTML = '<div class="ranking-detail"><p>키워드 정보를 찾을 수 없습니다</p></div>';
-                    return;
-                }
-                
-                const keyword = keywordData.data.find(k => k.id === keywordId);
-                if (!keyword) {
-                    container.innerHTML = '<div class="ranking-detail"><p>키워드 정보를 찾을 수 없습니다</p></div>';
-                    return;
-                }
-                
-                // Get ranking stats
-                const statsResponse = await fetch(`/api/rankings/stats/${keywordId}`);
+                // Get product ranking stats
+                const statsResponse = await fetch(`/api/rankings/product-stats/${selectedKeywordId}/${mid}`);
                 const statsData = await statsResponse.json();
                 
-                let stats = {
-                    current_rank: '-',
-                    previous_rank: '-',
-                    best_rank: '-',
-                    avg_rank: '-',
-                    rank_change: 0
-                };
-                
-                if (statsData.success && statsData.data) {
-                    stats = statsData.data;
+                if (!statsData.success || !statsData.data) {
+                    container.innerHTML = '<div class="ranking-detail"><p>해당 상품의 순위 데이터를 찾을 수 없습니다.</p></div>';
+                    return;
                 }
+                
+                const stats = statsData.data;
                 
                 container.innerHTML = `
                     <div class="ranking-header">
                         <div>
-                            <h2>${keyword.keyword}</h2>
-                            <p style="color: #6e6e73; margin-top: 0.5rem;">${keyword.service_name || '알 수 없음'}</p>
+                            <h2>${selectedKeyword}</h2>
+                            <p style="color: #6e6e73; margin-top: 0.5rem;">MID: ${mid}</p>
+                            <p style="color: #6e6e73; margin-top: 0.25rem;">${stats.title || '상품명 없음'}</p>
                         </div>
                         <span class="platform-badge platform-naver">네이버 쇼핑</span>
                     </div>
@@ -394,22 +432,28 @@
                         <div class="info-item">
                             <div class="info-label">현재 순위</div>
                             <div class="info-value">
-                                ${stats.current_rank}
+                                ${stats.current_rank || '-'}
                                 ${renderRankChange(stats.rank_change)}
                             </div>
                         </div>
                         <div class="info-item">
                             <div class="info-label">이전 순위</div>
-                            <div class="info-value">${stats.previous_rank}</div>
+                            <div class="info-value">${stats.previous_rank || '-'}</div>
                         </div>
                         <div class="info-item">
                             <div class="info-label">최고 순위</div>
-                            <div class="info-value">${stats.best_rank}</div>
+                            <div class="info-value">${stats.best_rank || '-'}</div>
                         </div>
                         <div class="info-item">
                             <div class="info-label">평균 순위</div>
-                            <div class="info-value">${stats.avg_rank}</div>
+                            <div class="info-value">${stats.avg_rank || '-'}</div>
                         </div>
+                    </div>
+                    
+                    <div class="product-info" style="margin-top: 2rem; padding: 1rem; background: #f5f5f7; border-radius: 8px;">
+                        <h4 style="margin: 0 0 0.5rem 0; font-size: 1rem;">상품 정보</h4>
+                        <p style="margin: 0.25rem 0; font-size: 0.875rem;">가격: ${stats.lprice ? stats.lprice.toLocaleString() + '원' : '-'}</p>
+                        <p style="margin: 0.25rem 0; font-size: 0.875rem;">판매처: ${stats.mall_name || '-'}</p>
                     </div>
                     
                     <div class="chart-container">
@@ -418,17 +462,17 @@
                 `;
                 
                 // Load chart data
-                await loadRankingChart(keywordId);
+                await loadProductRankingChart(selectedKeywordId, mid);
                 
             } catch (error) {
-                console.error('순위 상세 정보 로드 실패:', error);
+                console.error('상품 순위 정보 로드 실패:', error);
                 container.innerHTML = '<div class="ranking-detail"><p>순위 정보를 불러올 수 없습니다</p></div>';
             }
         }
 
-        async function loadRankingChart(keywordId) {
+        async function loadProductRankingChart(keywordId, productId) {
             try {
-                const response = await fetch(`/api/rankings/history/${keywordId}?days=7`);
+                const response = await fetch(`/api/rankings/product-history/${keywordId}/${productId}?days=7`);
                 const data = await response.json();
                 
                 if (!data.success || !data.data || data.data.length === 0) {
@@ -452,6 +496,13 @@
                 console.error('차트 데이터 로드 실패:', error);
             }
         }
+        
+        // MID input enter key handler
+        document.getElementById('midInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                searchProductRanking();
+            }
+        })
 
         function renderRankChange(change) {
             if (!change || change === 0) {
