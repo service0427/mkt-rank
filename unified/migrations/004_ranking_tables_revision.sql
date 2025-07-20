@@ -162,10 +162,10 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- 7. 현재부터 4개월치 파티션 생성
-SELECT create_monthly_partition(CURRENT_DATE);
-SELECT create_monthly_partition(CURRENT_DATE + INTERVAL '1 month');
-SELECT create_monthly_partition(CURRENT_DATE + INTERVAL '2 months');
-SELECT create_monthly_partition(CURRENT_DATE + INTERVAL '3 months');
+SELECT create_monthly_partition(CURRENT_DATE::DATE);
+SELECT create_monthly_partition((CURRENT_DATE + INTERVAL '1 month')::DATE);
+SELECT create_monthly_partition((CURRENT_DATE + INTERVAL '2 months')::DATE);
+SELECT create_monthly_partition((CURRENT_DATE + INTERVAL '3 months')::DATE);
 
 -- 8. 자동 파티션 관리 함수
 CREATE OR REPLACE FUNCTION manage_partitions()
