@@ -2,7 +2,7 @@
 import { query } from '../db/postgres';
 import { UnifiedKeyword } from '../types';
 import { NaverShoppingProvider } from './providers/naver-shopping.provider';
-import { CoupangProvider } from './providers/coupang.provider';
+// import { CoupangProvider } from './providers/coupang.provider';
 import * as cron from 'node-cron';
 
 interface RankingData {
@@ -14,12 +14,13 @@ interface RankingData {
 
 class RankingCollector {
   private naverProvider: NaverShoppingProvider;
-  private coupangProvider: CoupangProvider;
+  // private coupangProvider: CoupangProvider | null = null;
   private isRunning = false;
 
   constructor() {
     this.naverProvider = new NaverShoppingProvider();
-    this.coupangProvider = new CoupangProvider();
+    // 쿠팡은 나중에 활성화
+    // this.coupangProvider = new CoupangProvider();
   }
 
   async collectAllRankings() {
@@ -94,12 +95,8 @@ class RankingCollector {
   }
 
   private async collectCoupangRankings(keyword: UnifiedKeyword) {
-    try {
-      const rankings = await this.coupangProvider.getRankings(keyword.keyword, 3); // 3 pages = 300 items
-      await this.saveRankings(keyword, rankings, 'coupang');
-    } catch (error) {
-      console.error(`Coupang ranking collection failed for ${keyword.keyword}:`, error);
-    }
+    // 쿠팡은 나중에 구현
+    console.log(`Coupang ranking collection skipped for ${keyword.keyword} (not implemented yet)`);
   }
 
   private async saveRankings(keyword: UnifiedKeyword, rankings: RankingData[], platform: string) {
