@@ -83,6 +83,17 @@ export class MySQLAdSlotsSyncService {
       `);
 
       console.log(`총 ${adSlots.length}개의 AD_SLOTS 발견`);
+      
+      // 디버깅: 첫 번째 슬롯 정보 출력
+      if (adSlots.length > 0) {
+        console.log('첫 번째 AD_SLOT 정보:', {
+          ad_slot_id: adSlots[0].ad_slot_id,
+          work_keyword: adSlots[0].work_keyword,
+          product_mid: adSlots[0].product_mid,
+          price_compare_mid: adSlots[0].price_compare_mid,
+          seller_mid: adSlots[0].seller_mid
+        });
+      }
 
       let updatedCount = 0;
       let newStartRankCount = 0;
@@ -134,6 +145,19 @@ export class MySQLAdSlotsSyncService {
         } else {
           // 순위 정보를 찾을 수 없는 경우
           console.log(`[순위 없음] ${slot.work_keyword} (MID: ${mid})`);
+          
+          // 디버깅: 해당 키워드가 unified에 있는지 확인
+          const keywordExists = await query<any>(`
+            SELECT COUNT(*) as count 
+            FROM unified_search_keywords 
+            WHERE keyword = $1
+          `, [slot.work_keyword]);
+          
+          if (keywordExists[0]?.count > 0) {
+            console.log(`  → 키워드는 존재하지만 MID ${mid}에 대한 순위 없음`);
+          } else {
+            console.log(`  → 키워드 자체가 unified에 없음`);
+          }
         }
       }
 
@@ -181,7 +205,22 @@ export class MySQLAdSlotsSyncService {
         `, [keyword, productId]);
       }
 
-      return ranking || null;
+      // 결과 객체 구조 맞추기
+      if (ranking) {
+        return {
+          keyword: keyword,
+          product_id: ranking.product_id,
+          rank: ranking.rank,
+          title: ranking.title,
+          link: ranking.link,
+          image: ranking.image,
+          lprice: ranking.lprice,
+          mall_name: ranking.mall_name,
+          collected_at: ranking.collected_at
+        };
+      }
+
+      return null;
     } catch (error) {
       console.error(`순위 조회 오류 (${keyword}, ${productId}):`, error);
       return null;
