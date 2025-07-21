@@ -39,4 +39,9 @@ router.get('/settings', async (_req, res) => {
   res.sendFile(path.join(__dirname, '../views/settings.html'));
 });
 
+// API Test Page
+router.get('/api-test', async (_req, res) => {
+  res.sendFile(path.join(__dirname, '../views/api-test.html'));
+});
+
 export { router as webRouter };
