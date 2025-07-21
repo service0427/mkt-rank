@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API 테스트 - Unified System</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .api-test-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .search-section {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .search-form {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .search-input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        .search-button {
+            padding: 10px 20px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .search-button:hover {
+            background: #0056b3;
+        }
+        .result-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+        }
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .copy-button {
+            padding: 5px 10px;
+            background: #28a745;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .copy-button:hover {
+            background: #218838;
+        }
+        .json-result {
+            background: #282c34;
+            color: #abb2bf;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+        .api-url {
+            background: #e9ecef;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            margin-top: 10px;
+            word-break: break-all;
+        }
+        .loading {
+            text-align: center;
+            color: #666;
+            padding: 20px;
+        }
+        .error {
+            color: #dc3545;
+            padding: 10px;
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+        .options-section {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #ddd;
+        }
+        .option-group {
+            margin-bottom: 10px;
+        }
+        .option-label {
+            display: inline-block;
+            width: 100px;
+            font-weight: bold;
+        }
+        select, input[type="number"] {
+            padding: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="/" class="nav-brand">Unified System</a>
+            <div class="nav-links">
+                <a href="/">대시보드</a>
+                <a href="/services">서비스 관리</a>
+                <a href="/keywords">키워드 검색</a>
+                <a href="/sync">동기화 관리</a>
+                <a href="/rankings">순위 모니터</a>
+                <a href="/api-keys">API 키</a>
+                <a href="/api-test">API 테스트</a>
+                <a href="/settings">설정</a>
+            </div>
+        </div>
+    </nav>
+    
+    <div class="api-test-container">
+        <h1>API 테스트</h1>
+        
+        <div class="search-section">
+            <h2>키워드 검색 API</h2>
+            <form class="search-form" id="searchForm">
+                <input type="text" class="search-input" id="keyword" placeholder="검색할 키워드 입력" required>
+                <button type="submit" class="search-button">검색</button>
+            </form>
+            
+            <div class="options-section">
+                <div class="option-group">
+                    <span class="option-label">플랫폼:</span>
+                    <select id="platform">
+                        <option value="naver_shopping">네이버 쇼핑</option>
+                        <option value="coupang">쿠팡</option>
+                    </select>
+                </div>
+                <div class="option-group">
+                    <span class="option-label">결과 개수:</span>
+                    <input type="number" id="limit" value="20" min="1" max="100">
+                </div>
+            </div>
+        </div>
+        
+        <div id="apiUrl" class="api-url" style="display: none;"></div>
+        
+        <div id="resultSection" class="result-section" style="display: none;">
+            <div class="result-header">
+                <h3>API 응답 결과</h3>
+                <button class="copy-button" onclick="copyToClipboard()">JSON 복사</button>
+            </div>
+            <pre class="json-result" id="jsonResult"></pre>
+        </div>
+        
+        <div id="loading" class="loading" style="display: none;">
+            검색 중...
+        </div>
+        
+        <div id="error" class="error" style="display: none;"></div>
+    </div>
+    
+    <script>
+        let currentJsonData = null;
+        
+        document.getElementById('searchForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const keyword = document.getElementById('keyword').value;
+            const platform = document.getElementById('platform').value;
+            const limit = document.getElementById('limit').value;
+            
+            // UI 초기화
+            document.getElementById('resultSection').style.display = 'none';
+            document.getElementById('error').style.display = 'none';
+            document.getElementById('loading').style.display = 'block';
+            
+            // API URL 표시
+            const apiUrl = `/api/rankings/search?keyword=${encodeURIComponent(keyword)}&platform=${platform}&limit=${limit}`;
+            document.getElementById('apiUrl').textContent = `API URL: ${window.location.origin}${apiUrl}`;
+            document.getElementById('apiUrl').style.display = 'block';
+            
+            try {
+                const response = await fetch(apiUrl);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    currentJsonData = JSON.stringify(data, null, 2);
+                    document.getElementById('jsonResult').textContent = currentJsonData;
+                    document.getElementById('resultSection').style.display = 'block';
+                } else {
+                    throw new Error(data.error || 'API 요청 실패');
+                }
+            } catch (error) {
+                document.getElementById('error').textContent = `오류: ${error.message}`;
+                document.getElementById('error').style.display = 'block';
+            } finally {
+                document.getElementById('loading').style.display = 'none';
+            }
+        });
+        
+        function copyToClipboard() {
+            if (currentJsonData) {
+                navigator.clipboard.writeText(currentJsonData).then(() => {
+                    const button = event.target;
+                    const originalText = button.textContent;
+                    button.textContent = '복사됨!';
+                    setTimeout(() => {
+                        button.textContent = originalText;
+                    }, 2000);
+                }).catch(err => {
+                    alert('복사 실패: ' + err.message);
+                });
+            }
+        }
+        
+        // 엔터키로 검색
+        document.getElementById('keyword').focus();
+    </script>
+</body>
+</html>

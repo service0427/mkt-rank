@@ -23,6 +23,36 @@ curl -X POST http://localhost:3333/api/coupang/collect-all
 curl -X POST http://localhost:3333/api/coupang/sync-only
 ```
 
+## 순위 조회 API
+
+### 키워드 + MID로 순위 조회 (GET)
+```bash
+curl "http://localhost:4000/api/rank/check?keyword=무선청소기&code=89509068883"
+```
+
+### 키워드 + MID로 순위 조회 (POST)
+```bash
+curl -X POST http://localhost:4000/api/rank/check \
+  -H "Content-Type: application/json" \
+  -d '{"keyword": "무선청소기", "code": "89509068883"}'
+```
+
+### 응답 예시
+```json
+{
+  "success": true,
+  "keyword": "무선청소기",
+  "code": "89509068883",
+  "rank": 5,
+  "product": {
+    "name": "2025년형 차이슨 무선 청소기 초경량 가성비 스틱 원룸",
+    "href": "https://search.shopping.naver.com/catalog/89509068883",
+    "thumbnail": "https://shopping-phinf.pstatic.net/main_89509068883/89509068883.jpg",
+    "page": 1
+  },
+  "collected_at": "2025-07-21T14:07:34.412Z"
+}
+
 ### 4. 쿠팡 단일 키워드 체크
 ```bash
 curl -X POST http://localhost:3333/api/coupang/check \

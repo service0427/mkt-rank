@@ -14,6 +14,7 @@ import { rankingsRouter } from './routes/rankings.routes';
 import { statsRouter } from './routes/stats.routes';
 import apiKeysRouter from './routes/api-keys.routes';
 import { webRouter } from './routes/web.routes';
+import { rankCheckRouter } from './routes/rank-check.routes';
 
 // Load environment variables
 dotenv.config({ path: path.join(__dirname, '../../../.env') });
@@ -58,6 +59,7 @@ app.use('/api/sync', syncRouter);
 app.use('/api/rankings', rankingsRouter);
 app.use('/api/stats', statsRouter);
 app.use('/api/keys', apiKeysRouter);
+app.use('/', rankCheckRouter); // rank check API 등록
 
 // Web Routes (UI pages)
 app.use('/', webRouter);

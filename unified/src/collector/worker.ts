@@ -168,32 +168,30 @@ class RankingCollector {
 
       await query(`
         INSERT INTO unified_rankings_current (
-          keyword_id, keyword, platform, product_id,
-          rank, previous_rank, rank_change,
+          keyword_id, platform, product_id,
+          rank, previous_rank,
           title, link, image, lprice, mall_name,
           brand, category1, collected_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
         ON CONFLICT (keyword_id, product_id, platform)
         DO UPDATE SET
-          rank = $5,
+          rank = $4,
           previous_rank = unified_rankings_current.rank,
-          rank_change = unified_rankings_current.rank - $5,
-          title = $8,
-          link = $9,
-          image = $10,
-          lprice = $11,
-          mall_name = $12,
-          brand = $13,
-          category1 = $14,
-          collected_at = $15
+          title = $6,
+          link = $7,
+          image = $8,
+          lprice = $9,
+          mall_name = $10,
+          brand = $11,
+          category1 = $12,
+          collected_at = $13,
+          updated_at = CURRENT_TIMESTAMP
       `, [
         keyword.id,
-        keyword.keyword,
         platform,
         productId,
         ranking.rank,
         previousRank || null,
-        previousRank ? previousRank - ranking.rank : null,
         ranking.metadata?.title || '',
         ranking.metadata?.link || ranking.metadata?.href || '',
         ranking.metadata?.image || ranking.metadata?.thumbnail || '',

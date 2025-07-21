@@ -126,50 +126,9 @@ router.put('/config/:service', async (_req: Request, res: Response) => {
   }
 });
 
-// POST /api/sync/mysql-adslots - Trigger MySQL AD_SLOTS sync
-router.post('/mysql-adslots', async (_req: Request, res: Response) => {
-  try {
-    const { MySQLAdSlotsSyncService } = await import('../../sync/mysql-adslots-sync');
-    
-    const mysqlConfig = {
-      host: process.env.MYSQL_HOST || 'localhost',
-      port: parseInt(process.env.MYSQL_PORT || '3306'),
-      user: process.env.MYSQL_USER || 'root',
-      password: process.env.MYSQL_PASSWORD || '',
-      database: process.env.MYSQL_DATABASE || 'magic_db'
-    };
-
-    const syncService = new MySQLAdSlotsSyncService(mysqlConfig);
-    const result = await syncService.triggerSync();
-    
-    res.json(result);
-  } catch (error) {
-    console.error('MySQL AD_SLOTS sync error:', error);
-    res.status(500).json({ success: false, error: 'Failed to sync MySQL AD_SLOTS' });
-  }
-});
-
-// GET /api/sync/mysql-adslots/stats - Get MySQL AD_SLOTS sync stats
-router.get('/mysql-adslots/stats', async (_req: Request, res: Response) => {
-  try {
-    const { MySQLAdSlotsSyncService } = await import('../../sync/mysql-adslots-sync');
-    
-    const mysqlConfig = {
-      host: process.env.MYSQL_HOST || 'localhost',
-      port: parseInt(process.env.MYSQL_PORT || '3306'),
-      user: process.env.MYSQL_USER || 'root',
-      password: process.env.MYSQL_PASSWORD || '',
-      database: process.env.MYSQL_DATABASE || 'magic_db'
-    };
-
-    const syncService = new MySQLAdSlotsSyncService(mysqlConfig);
-    const stats = await syncService.getStats();
-    
-    res.json({ success: true, data: stats });
-  } catch (error) {
-    console.error('MySQL AD_SLOTS stats error:', error);
-    res.status(500).json({ success: false, error: 'Failed to get MySQL AD_SLOTS stats' });
-  }
-});
+// MySQL AD_SLOTS 동기화 - 제거됨 (API 방식으로 변경)
+// 이제 /api/rank/check API를 사용하세요
+// GET /api/rank/check?keyword=키워드&code=MID
+// POST /api/rank/check { "keyword": "키워드", "code": "MID" }
 
 export { router as syncRouter };
