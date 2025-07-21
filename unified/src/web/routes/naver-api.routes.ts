@@ -4,6 +4,32 @@ import { query } from '../../db/postgres';
 
 const router = Router();
 
+// GET /api/naver/test-keys - API 키 상태 확인 (디버깅용)
+router.get('/test-keys', async (_req: Request, res: Response): Promise<Response> => {
+  try {
+    const keys = await query<any>(`
+      SELECT provider, client_id, is_active, last_used_at
+      FROM unified_api_keys 
+      WHERE provider = 'naver_shopping'
+    `);
+    
+    return res.json({
+      success: true,
+      count: keys.length,
+      keys: keys.map((k: any) => ({
+        ...k,
+        client_secret: k.client_secret ? '***' : null
+      }))
+    });
+  } catch (error: any) {
+    return res.status(500).json({
+      success: false,
+      error: 'Database error',
+      details: error.message
+    });
+  }
+});
+
 interface NaverApiResponse {
   lastBuildDate: string;
   total: number;
@@ -45,7 +71,6 @@ router.get('/search', async (req: Request, res: Response): Promise<Response> => 
       FROM unified_api_keys 
       WHERE provider = 'naver_shopping' 
       AND is_active = true 
-      AND (rate_limit_remaining IS NULL OR rate_limit_remaining > 0)
       ORDER BY last_used_at ASC NULLS FIRST
       LIMIT 1
     `);
@@ -75,7 +100,7 @@ router.get('/search', async (req: Request, res: Response): Promise<Response> => 
     await query(`
       UPDATE unified_api_keys 
       SET last_used_at = CURRENT_TIMESTAMP,
-          request_count = COALESCE(request_count, 0) + 1
+          usage_count = COALESCE(usage_count, 0) + 1
       WHERE client_id = $1
     `, [apiKey.client_id]);
 
@@ -97,7 +122,17 @@ router.get('/search', async (req: Request, res: Response): Promise<Response> => 
     });
 
   } catch (error: any) {
-    console.error('Naver API error:', error.response?.data || error.message);
+    console.error('Naver API error details:', {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status,
+      headers: error.response?.headers,
+      config: {
+        url: error.config?.url,
+        headers: error.config?.headers,
+        params: error.config?.params
+      }
+    });
     
     if (error.response?.status === 429) {
       return res.status(429).json({ 
@@ -109,7 +144,8 @@ router.get('/search', async (req: Request, res: Response): Promise<Response> => 
     return res.status(500).json({ 
       success: false, 
       error: 'Failed to fetch from Naver API',
-      details: error.response?.data || error.message
+      details: error.response?.data || error.message,
+      status: error.response?.status
     });
   }
 });
@@ -126,7 +162,6 @@ router.get('/search/:keyword/:productId', async (req: Request, res: Response): P
       FROM unified_api_keys 
       WHERE provider = 'naver_shopping' 
       AND is_active = true 
-      AND (rate_limit_remaining IS NULL OR rate_limit_remaining > 0)
       ORDER BY last_used_at ASC NULLS FIRST
       LIMIT 1
     `);
@@ -166,7 +201,7 @@ router.get('/search/:keyword/:productId', async (req: Request, res: Response): P
         await query(`
           UPDATE unified_api_keys 
           SET last_used_at = CURRENT_TIMESTAMP,
-              request_count = COALESCE(request_count, 0) + $1
+              usage_count = COALESCE(usage_count, 0) + $1
           WHERE client_id = $2
         `, [page, apiKey.client_id]);
 
