@@ -9,6 +9,12 @@ interface RankingFilter {
   offset?: number;
 }
 
+interface SearchRankingParams {
+  keyword: string;
+  platform: string;
+  limit: number;
+}
+
 export async function getCurrentRankings(filters: RankingFilter) {
   try {
     let whereConditions = [];
@@ -286,4 +292,76 @@ export async function triggerCollection(_service_id?: string, _keyword_ids?: str
     message: 'Collection triggered',
     job_id: `job_${Date.now()}`
   };
+}
+
+export async function searchRankings(params: SearchRankingParams) {
+  try {
+    const { keyword, platform, limit } = params;
+    
+    // 먼저 해당 키워드가 있는지 확인
+    const [keywordData] = await query<any>(`
+      SELECT id FROM unified_search_keywords 
+      WHERE keyword = $1
+      LIMIT 1
+    `, [keyword]);
+    
+    if (!keywordData) {
+      return [];
+    }
+    
+    // unified_rankings_current에서 검색
+    const rankings = await query<any>(`
+      SELECT 
+        urc.rank,
+        urc.product_id,
+        urc.title,
+        urc.link,
+        urc.image,
+        urc.lprice,
+        urc.mall_name,
+        urc.brand,
+        urc.category1,
+        urc.previous_rank,
+        urc.rank_change,
+        urc.collected_at,
+        usk.keyword
+      FROM unified_rankings_current urc
+      JOIN unified_search_keywords usk ON urc.keyword_id = usk.id
+      WHERE usk.keyword = $1 
+      AND urc.platform = $2
+      ORDER BY urc.rank ASC
+      LIMIT $3
+    `, [keyword, platform, limit]);
+    
+    if (rankings.length === 0) {
+      // current 테이블에 없으면 detail 테이블에서 검색
+      const detailRankings = await query<any>(`
+        SELECT 
+          rank,
+          product_id,
+          title,
+          link,
+          image,
+          lprice,
+          mall_name,
+          brand,
+          category1,
+          collected_at,
+          keyword
+        FROM unified_rankings_detail
+        WHERE keyword = $1 
+        AND platform = $2
+        AND collected_at >= CURRENT_TIMESTAMP - INTERVAL '24 hours'
+        ORDER BY collected_at DESC, rank ASC
+        LIMIT $3
+      `, [keyword, platform, limit]);
+      
+      return detailRankings;
+    }
+    
+    return rankings;
+  } catch (error) {
+    console.error('Error searching rankings:', error);
+    throw error;
+  }
 }
