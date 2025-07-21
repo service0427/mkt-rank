@@ -14,6 +14,31 @@ router.get('/', async (req: Request, res: Response) => {
   }
 });
 
+// GET /api/rankings/search - Search rankings by keyword
+router.get('/search', async (req: Request, res: Response): Promise<Response> => {
+  try {
+    const { keyword, platform = 'naver_shopping', limit = 20 } = req.query;
+    
+    if (!keyword) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'keyword parameter is required' 
+      });
+    }
+
+    const rankings = await rankingsController.searchRankings({
+      keyword: keyword as string,
+      platform: platform as string,
+      limit: parseInt(limit as string)
+    });
+    
+    return res.json({ success: true, data: rankings });
+  } catch (error) {
+    console.error('Search rankings error:', error);
+    return res.status(500).json({ success: false, error: 'Failed to search rankings' });
+  }
+});
+
 // GET /api/rankings/history/:keyword_id - Get ranking history for a specific keyword
 router.get('/history/:keyword_id', async (req: Request, res: Response) => {
   try {
