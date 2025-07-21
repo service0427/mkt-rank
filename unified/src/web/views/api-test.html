@@ -158,6 +158,13 @@
                     <span class="option-label">결과 개수:</span>
                     <input type="number" id="limit" value="20" min="1" max="100">
                 </div>
+                <div class="option-group">
+                    <span class="option-label">데이터 소스:</span>
+                    <select id="dataSource">
+                        <option value="db">데이터베이스 (캐시)</option>
+                        <option value="api">네이버 API (실시간)</option>
+                    </select>
+                </div>
             </div>
         </div>
         
@@ -187,6 +194,7 @@
             const keyword = document.getElementById('keyword').value;
             const platform = document.getElementById('platform').value;
             const limit = document.getElementById('limit').value;
+            const dataSource = document.getElementById('dataSource').value;
             
             // UI 초기화
             document.getElementById('resultSection').style.display = 'none';
@@ -194,7 +202,15 @@
             document.getElementById('loading').style.display = 'block';
             
             // API URL 표시
-            const apiUrl = `/api/rankings/search?keyword=${encodeURIComponent(keyword)}&platform=${platform}&limit=${limit}`;
+            let apiUrl;
+            if (dataSource === 'api' && platform === 'naver_shopping') {
+                // 네이버 API 직접 호출
+                apiUrl = `/api/naver/search?keyword=${encodeURIComponent(keyword)}&display=${limit}`;
+            } else {
+                // 데이터베이스 조회
+                apiUrl = `/api/rankings/search?keyword=${encodeURIComponent(keyword)}&platform=${platform}&limit=${limit}`;
+            }
+            
             document.getElementById('apiUrl').textContent = `API URL: ${window.location.origin}${apiUrl}`;
             document.getElementById('apiUrl').style.display = 'block';
             
