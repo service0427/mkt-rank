@@ -58,7 +58,7 @@ router.get('/search', async (req: Request, res: Response): Promise<Response> => 
     }
 
     // 네이버 쇼핑 API 호출
-    const response = await axios.get('https://openapi.naver.com/v1/search/shop.json', {
+    const response = await axios.get<NaverApiResponse>('https://openapi.naver.com/v1/search/shop.json', {
       params: {
         query: keyword as string,
         display: parseInt(display as string),

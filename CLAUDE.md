@@ -112,8 +112,24 @@ curl -X POST http://localhost:3001/api/keys/validate \
 http://localhost:3001/api-keys
 ```
 
+## 네이버 API 직접 호출 (실시간 데이터)
+
+### 키워드 검색 (네이버 API 직접)
+```bash
+curl "https://mkt.techb.kr:4443/api/naver/search?keyword=키보드&display=10"
+```
+
+### 특정 상품 순위 찾기 (네이버 API 직접)
+```bash
+curl "https://mkt.techb.kr:4443/api/naver/search/키보드/88757865230"
+```
+
 ## Unified 시스템 배포
 ```bash
 cd ~/mkt-rank/unified
 pm2 restart unified-web
 ```
+
+## HTTPS 접속 정보
+- HTTP: http://mkt.techb.kr:4000
+- HTTPS: https://mkt.techb.kr:4443
