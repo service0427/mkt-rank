@@ -63,6 +63,8 @@ export class NaverShoppingProvider {
             metadata: {
               productId: results[i].productId,
               title: results[i].title,
+              link: results[i].link,
+              image: results[i].image,
               mallName: results[i].mallName,
               lprice: results[i].lprice,
               brand: results[i].brand,
